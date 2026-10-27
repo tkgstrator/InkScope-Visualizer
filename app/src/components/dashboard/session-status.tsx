@@ -2,7 +2,8 @@ import { Server, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { clientIp, gameKey, piaKey, serverIp } from "@/demo-data"
-import type { PacketEnvelope } from "../../../../api/wire"
+import { emptySessionObservation } from "@/lib/session-observation"
+import type { SessionObservation } from "@/lib/session-observation"
 
 type SessionStatusProps = {
   serverRtt: string
@@ -11,110 +12,16 @@ type SessionStatusProps = {
   quota: number
   source?: "demo" | "live"
   connection?: "idle" | "connecting" | "connected" | "disconnected"
-  liveEvents?: PacketEnvelope[]
+  observation?: SessionObservation
   localGameKey?: string | null
   controlKeyState?: "absent" | "pending" | "applied" | null
   controlKeyLocked?: boolean
 }
 
-function latestField(events: PacketEnvelope[], name: string, kind?: string): string | null {
-  for (let eventIndex = events.length - 1; eventIndex >= 0; eventIndex--) {
-    for (const row of events[eventIndex]!.rows) {
-      if (row.status !== "authenticated" || kind !== undefined && row.kind !== kind) continue
-      const field = row.fields.find((item) => item.name === name)
-      if (field) return field.value
-    }
-  }
-  return null
-}
-
-function verifiedHost(event: PacketEnvelope): string | null {
-  const host = event.rows
-    .filter((row) => row.kind === "BrowseReply" && row.status === "proof_verified")
-    .flatMap((row) => row.fields)
-    .find((field) => field.name === "HostIPv4")?.value
-  return host === event.packet.source_ip ? host : null
-}
-
-function isUnicast(ip: string): boolean {
-  const octets = ip.split(".").map(Number)
-  return octets.length === 4 && octets[0] !== 0 && octets[0]! < 224 && octets[3] !== 255
-}
-
-function delayFor(event: PacketEnvelope): string | null {
-  for (const row of event.rows) {
-    if (row.kind !== "RTTProtocol" || row.status !== "authenticated" || row.fields.find((field) => field.name === "Type")?.value !== "1") continue
-    const delay = row.fields.find((field) => field.name === "CaptureResponseDelayMs")?.value
-    if (delay && /^(?:0|[1-9][0-9]*)(?:\.[0-9]{1,3})?$/.test(delay) && Number.isFinite(Number(delay)) && Number(delay) > 0) return delay
-  }
-  return null
-}
-
-function pairMatches(event: PacketEnvelope, first: string, second: string): boolean {
-  return event.packet.source_ip === first && event.packet.destination_ip === second ||
-    event.packet.source_ip === second && event.packet.destination_ip === first
-}
-
-function observedPeers(events: PacketEnvelope[]): {
-  host: string | null
-  clients: Array<{ ip: string; delay: string | null }>
-  source: string | null
-  destination: string | null
-  pairDelay: string | null
-} {
-  const latest = events.at(-1)
-  if (!latest) return { host: null, clients: [], source: null, destination: null, pairDelay: null }
-
-  let host: string | null = null
-  let firstProof = -1
-  for (let index = events.length - 1; index >= 0; index--) {
-    const candidate = verifiedHost(events[index]!)
-    if (candidate === null) continue
-    if (host === null) host = candidate
-    if (candidate !== host) break
-    firstProof = index
-  }
-
-  if (host !== null) {
-    const clients = new Map<string, string | null>()
-    for (const event of events.slice(firstProof)) {
-      if (verifiedHost(event) !== host && !event.rows.some((row) => row.status === "authenticated")) continue
-      const peer: string | null = event.packet.source_ip === host ? event.packet.destination_ip :
-        event.packet.destination_ip === host ? event.packet.source_ip : null
-      if (peer === null || peer === host || !isUnicast(peer)) continue
-      if (!clients.has(peer)) clients.set(peer, null)
-      const delay = delayFor(event)
-      if (delay !== null) clients.set(peer, delay)
-    }
-    return {
-      host,
-      clients: Array.from(clients, ([ip, delay]) => ({ ip, delay })).sort((a, b) => a.ip.localeCompare(b.ip, undefined, { numeric: true })),
-      source: null,
-      destination: null,
-      pairDelay: null,
-    }
-  }
-
-  const source = latest.packet.source_ip
-  const destination = latest.packet.destination_ip
-  let pairDelay: string | null = null
-  for (const event of events) {
-    if (!pairMatches(event, source, destination)) continue
-    pairDelay = delayFor(event) ?? pairDelay
-  }
-  return { host: null, clients: [], source, destination, pairDelay }
-}
-
-export function SessionStatus({ serverRtt, clientRtt, wave, quota, source = "demo", connection = "idle", liveEvents = [], localGameKey = null, controlKeyState = null, controlKeyLocked = false }: SessionStatusProps) {
+export function SessionStatus({ serverRtt, clientRtt, wave, quota, source = "demo", connection = "idle", observation, localGameKey = null, controlKeyState = null, controlKeyLocked = false }: SessionStatusProps) {
   if (source === "live") {
-    const latest = liveEvents.at(-1)
-    const sessionEvents = latest ? liveEvents.filter((event) => event.session_id === latest.session_id) : []
-    const stage = latestField(sessionEvents, "StageId", "PrivateSetting") ?? latestField(sessionEvents, "StageResource")
-    const difficulty = latestField(sessionEvents, "Difficulty", "PrivateSetting") ?? latestField(sessionEvents, "Difficulty")
-    const jobType = latestField(sessionEvents, "JobType")
-    const quotaField = latestField(sessionEvents, "Quota")
-    const sequence = latestField(sessionEvents, "Sequence")
-    const peers = observedPeers(sessionEvents)
+    const observed = observation ?? emptySessionObservation()
+    const peers = observed
     const configured = controlKeyState === "applied" || controlKeyState === "pending"
     const visibleGameKey = controlKeyLocked && configured ? "********************************" : localGameKey ?? (configured ? "CONFIGURED" : "—")
     const keyBadge = controlKeyLocked && configured ? "LOCKED" : localGameKey ? "LOCAL" : configured ? "CONFIGURED" : "—"
@@ -139,16 +46,16 @@ export function SessionStatus({ serverRtt, clientRtt, wave, quota, source = "dem
         </Card>
         <Card className="gap-1 rounded-sm p-3 shadow-none ring-0">
           <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">PrivateSetting · observed</div>
-          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">StageId</span><b className="truncate">{stage || "—"}</b></div>
-          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">Difficulty</span><b>{difficulty ?? "—"}</b></div>
-          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">JobType</span><b>{jobType ?? "—"}</b></div>
+          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">StageId</span><b className="truncate">{observed.stageId || "—"}</b></div>
+          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">Difficulty</span><b>{observed.difficulty ?? "—"}</b></div>
+          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">JobType</span><b>{observed.jobType ?? "—"}</b></div>
         </Card>
         <Card className="gap-1 rounded-sm p-3 shadow-none ring-0">
           <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gameplay · observed fields</div>
-          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">Quota</span><b>{quotaField ?? "—"}</b></div>
-          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">Sequence</span><b>{sequence ?? "—"}</b></div>
-          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">WAVE</span><b>—</b></div>
-          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">Tide</span><b>—</b></div>
+          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">Quota</span><b>{observed.quota ?? "—"}</b></div>
+          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">Sequence</span><b>{observed.sequence ?? "—"}</b></div>
+          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">WAVE</span><b>{observed.wave ?? "—"}</b></div>
+          <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">Tide</span><b>{observed.tide ?? "—"}</b></div>
         </Card>
       </section>
     )

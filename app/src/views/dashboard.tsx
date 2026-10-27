@@ -10,7 +10,7 @@ import { type Filter } from "@/components/dashboard/packet-list"
 import { SessionStatus } from "@/components/dashboard/session-status"
 import { StageMap } from "@/components/dashboard/stage-map"
 import { useLiveFeed, useOverlayFeed } from "@/lib/live-feed"
-import { useReplayArchive } from "@/lib/replay-archive"
+import { replayDelayMs, useReplayArchive } from "@/lib/replay-archive"
 import { livePacketRows } from "@/lib/packet-view"
 import { DebugView } from "./debug-view"
 import { RawView } from "./raw-view"
@@ -108,16 +108,15 @@ export function Dashboard() {
 
   useEffect(() => {
     if (!replayPlaying) return
-    const timer = window.setInterval(() => setReplayPosition((current) => {
-      const last = source === "demo" ? 100 : replayArchive.selectedEvents.length - 1
-      if (current >= last) {
-        setReplayPlaying(false)
-        return current
-      }
-      return current + 1
-    }), source === "demo" ? 250 : 500)
-    return () => window.clearInterval(timer)
-  }, [replayPlaying, source, replayArchive.selectedEvents.length])
+    const delay = source === "demo" ? replayPosition < 100 ? 250 : null :
+      replayDelayMs(replayArchive.selectedEvents, replayPosition)
+    if (delay === null) {
+      setReplayPlaying(false)
+      return
+    }
+    const timer = window.setTimeout(() => setReplayPosition((current) => current + 1), delay)
+    return () => window.clearTimeout(timer)
+  }, [replayPlaying, replayPosition, source, replayArchive.selectedEvents])
 
   const selectReplaySession = (sessionId: string) => {
     replayArchive.selectSession(sessionId)
@@ -135,8 +134,11 @@ export function Dashboard() {
   const selectedIdForView = selected?.id ?? ""
   const serverRtt = (38.2 + Math.sin(tick / 3) * 3.4).toFixed(1)
   const clientRtt = (42.6 + Math.cos(tick / 4) * 4.1).toFixed(1)
-  const liveTotal = liveFeed.events.length
-  const liveAuthenticated = liveFeed.events.filter((event) => event.rows.some((row) => row.status === "authenticated" || row.status === "proof_verified")).length
+  const liveTotal = liveFeed.observation.observedRecords
+  const liveAuthenticated = liveFeed.observation.authenticatedRecords
+  const delayedClients = liveFeed.observation.clients.filter((client) => client.delay !== null)
+  const liveDelay = delayedClients.length === 1 ? delayedClients[0]!.delay :
+    liveFeed.observation.host === null ? liveFeed.observation.pairDelay : null
   const obsUrl = window.location.origin + window.location.pathname + (source === "live" ? "?view=overlay&source=live" : `?view=overlay&wave=${wave}`)
   const selectedWave = waveData.find((item) => item.wave === wave) ?? waveData[1]
   const requestedWave = Number(new URLSearchParams(window.location.search).get("wave"))
@@ -188,7 +190,7 @@ export function Dashboard() {
 
       <Tabs value={view} onValueChange={(value) => setView(value as View)} orientation={verticalNav ? "vertical" : "horizontal"} className="grid h-[calc(100vh-4rem)] grid-cols-[64px_280px_minmax(0,1fr)] gap-0 max-xl:block max-xl:h-auto">
         <NavMenu />
-        <SessionStatus serverRtt={serverRtt} clientRtt={clientRtt} wave={wave} quota={selectedWave.quota} source={source} connection={liveFeed.connection} liveEvents={liveFeed.events} localGameKey={localGameKey} controlKeyState={controlKeyState} controlKeyLocked={controlKeyLocked} />
+        <SessionStatus serverRtt={serverRtt} clientRtt={clientRtt} wave={wave} quota={selectedWave.quota} source={source} connection={liveFeed.connection} observation={liveFeed.observation} localGameKey={localGameKey} controlKeyState={controlKeyState} controlKeyLocked={controlKeyLocked} />
 
         <main className={view === "map" ? "h-full min-h-0 min-w-0 overflow-hidden p-0 max-xl:h-[min(78vh,760px)]" : "min-w-0 overflow-y-auto p-6 max-xl:overflow-visible max-sm:p-3"}>
           <div className={view === "map" ? "h-full w-full" : "mx-auto max-w-[1500px]"}>
@@ -197,7 +199,7 @@ export function Dashboard() {
                   source={source}
                   total={source === "demo" ? total : liveTotal}
                   authenticated={source === "demo" ? authenticated : liveAuthenticated}
-                  clientRtt={source === "demo" ? clientRtt : null}
+                  clientRtt={source === "demo" ? clientRtt : liveDelay}
                   wave={source === "demo" ? wave : null}
                   waves={source === "demo" ? waveData : []}
                   onWaveChange={setWave}
@@ -219,11 +221,11 @@ export function Dashboard() {
               </TabsContent>
 
               <TabsContent value="map" className="m-0 h-full">
-                <StageMap tick={tick} />
+                <StageMap tick={tick} source={source} observedStageId={source === "live" ? liveFeed.observation.stageId : null} observedTide={source === "live" ? liveFeed.observation.tide : null} connection={liveFeed.connection} />
               </TabsContent>
 
               <TabsContent value="replay">
-                <ReplayView source={source} persistence={liveFeed.persistence ?? "memory"} sessions={replayArchive.sessions} selectedSessionId={replayArchive.selectedSessionId} selectedEvents={replayArchive.selectedEvents} loading={replayArchive.loading} error={replayArchive.error} hasMore={replayArchive.hasMore} onSelectSession={selectReplaySession} onLoadMore={replayArchive.loadMore} position={replayPosition} playing={replayPlaying} onPositionChange={setReplayPosition} onPlayingChange={setReplayPlaying} />
+                <ReplayView source={source} persistence={liveFeed.persistence} sessions={replayArchive.sessions} selectedSessionId={replayArchive.selectedSessionId} selectedEvents={replayArchive.selectedEvents} loading={replayArchive.loading} error={replayArchive.error} hasMore={replayArchive.hasMore} hasPrevious={replayArchive.hasPrevious} pageNumber={replayArchive.pageNumber} pageStartIndex={replayArchive.pageStartIndex} onSelectSession={selectReplaySession} onLoadMore={replayArchive.loadMore} onLoadPrevious={replayArchive.loadPrevious} position={replayPosition} playing={replayPlaying} onPositionChange={setReplayPosition} onPlayingChange={setReplayPlaying} />
               </TabsContent>
 
               <TabsContent value="obs">

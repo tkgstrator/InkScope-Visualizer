@@ -42,7 +42,7 @@ export function OverviewView({ source, total, authenticated, clientRtt, wave, wa
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <FlatCard title="Captured packets" meta={sourceLabel}>
+        <FlatCard title={source === "demo" ? "Captured packets" : "Observed packets"} meta={sourceLabel}>
           <div className="font-mono text-3xl font-semibold">{total ?? "—"}</div>
         </FlatCard>
         <FlatCard title="Authenticated" meta={sourceLabel}>

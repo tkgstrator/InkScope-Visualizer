@@ -18,7 +18,7 @@ describe("Overview data source", () => {
     )
 
     expect(html).toContain("LIVE")
-    expect(html).toContain("Captured packets")
+    expect(html).toContain("Observed packets")
     expect(html).toContain("—")
     expect(html).not.toContain("Cop_Shakedent")
     expect(html).not.toContain("192.168.10.157")

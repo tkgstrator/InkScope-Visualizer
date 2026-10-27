@@ -14,15 +14,19 @@ export type ReplaySession = {
 
 export type ReplayViewProps = {
   source: "demo" | "live" | "replay"
-  persistence?: "memory" | "postgres"
+  persistence?: "memory" | "postgres" | null
   sessions: ReplaySession[]
   selectedSessionId: string | null
   selectedEvents: PacketEnvelope[]
   loading: boolean
   error: string | null
   hasMore: boolean
+  hasPrevious?: boolean
+  pageNumber?: number
+  pageStartIndex?: number
   onSelectSession: (sessionId: string) => void
   onLoadMore: () => void
+  onLoadPrevious?: () => void
   position: number
   playing: boolean
   onPositionChange: (position: number) => void
@@ -46,9 +50,21 @@ function shortSessionId(sessionId: string): string {
   return sessionId.slice(0, 8)
 }
 
+function captureRange(events: readonly PacketEnvelope[]): [string, string] | null {
+  if (events.length === 0) return null
+  let earliest = events[0]!.timestamp_ns
+  let latest = earliest
+  for (const event of events.slice(1)) {
+    if (BigInt(event.timestamp_ns) < BigInt(earliest)) earliest = event.timestamp_ns
+    if (BigInt(event.timestamp_ns) > BigInt(latest)) latest = event.timestamp_ns
+  }
+  return [earliest, latest]
+}
+
 export function ReplayView({
-  source, persistence = "memory", sessions, selectedSessionId, selectedEvents, loading, error,
-  hasMore, onSelectSession, onLoadMore, position, playing, onPositionChange, onPlayingChange,
+  source, persistence = null, sessions, selectedSessionId, selectedEvents, loading, error,
+  hasMore, hasPrevious = false, pageNumber = 1, pageStartIndex = 0,
+  onSelectSession, onLoadMore, onLoadPrevious, position, playing, onPositionChange, onPlayingChange,
 }: ReplayViewProps) {
   const replaySeconds = Math.floor(position * 1.2)
   const replayTime = `${String(Math.floor(replaySeconds / 60)).padStart(2, "0")}:${String(replaySeconds % 60).padStart(2, "0")}`
@@ -57,6 +73,16 @@ export function ReplayView({
   const currentEvent = selectedEvents[currentIndex]
   const windowStart = Math.max(0, Math.min(currentIndex - 10, selectedEvents.length - 21))
   const timeline = selectedEvents.slice(windowStart, windowStart + 21)
+  const firstLoaded = selectedEvents[0]
+  const lastLoaded = selectedEvents.at(-1)
+  const captureBounds = captureRange(selectedEvents)
+  const pageEnd = selectedEvents.length > 0 && currentIndex === selectedEvents.length - 1
+  const changePage = (direction: "previous" | "next") => {
+    onPlayingChange(false)
+    onPositionChange(0)
+    if (direction === "previous") onLoadPrevious?.()
+    else onLoadMore()
+  }
 
   if (source !== "demo") {
     return (
@@ -65,10 +91,10 @@ export function ReplayView({
           <div>
             <h3 className="font-semibold">Session replay</h3>
           </div>
-          <Badge variant="outline" className="rounded-sm">{persistence === "postgres" ? "POSTGRES" : "MEMORY"}</Badge>
+          <Badge variant="outline" className="rounded-sm">{persistence?.toUpperCase() ?? "CONNECTING"}</Badge>
         </div>
         {persistence !== "postgres" ? (
-          <FlatCard title="Sessions" meta="UNAVAILABLE"><span role="status" className="font-mono text-xs text-muted-foreground">NO DATABASE</span></FlatCard>
+          <FlatCard title="Sessions" meta="UNAVAILABLE"><span role="status" className="font-mono text-xs text-muted-foreground">{persistence === null ? "CONNECTING" : "NO DATABASE"}</span></FlatCard>
         ) : (
           <div className="grid gap-3 2xl:grid-cols-[300px_minmax(0,1fr)]">
             <FlatCard title="Sessions" meta={String(sessions.length)} className="min-w-0">
@@ -86,9 +112,16 @@ export function ReplayView({
               </div>
             </FlatCard>
             <FlatCard title={selectedSession ? `Session ${shortSessionId(selectedSession.session_id)}` : "Timeline"}
-              meta={selectedSession ? `${selectedEvents.length} / ${selectedSession.events} LOADED` : "SELECT SESSION"} className="min-w-0">
+              meta={selectedSession ? selectedEvents.length > 0 ? `${pageStartIndex + 1}–${pageStartIndex + selectedEvents.length} / ${selectedSession.events}` : `0 / ${selectedSession.events}` : "SELECT SESSION"} className="min-w-0">
               {error && <div role="alert" className="mb-3 font-mono text-xs text-destructive">ERROR · {error}</div>}
               {selectedSession && <>
+                <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-muted-foreground">
+                  <span>PAGE {pageNumber}</span>
+                  {firstLoaded && lastLoaded && <>
+                    <span>RECORDS #{firstLoaded.record}–#{lastLoaded.record}</span>
+                    {captureBounds && <span>CAPTURE RANGE {captureTime(captureBounds[0])}–{captureTime(captureBounds[1])}</span>}
+                  </>}
+                </div>
                 <div className="flex items-center gap-3">
                   <Button variant="outline" size="icon" className="rounded-sm" aria-label={playing ? "Pause replay" : "Play replay"}
                     disabled={selectedEvents.length === 0} onClick={() => onPlayingChange(!playing)}>
@@ -132,9 +165,12 @@ export function ReplayView({
                     </>}
                   </div>
                 </div>
-                <div className="mt-4 flex items-center justify-between border-t pt-3 font-mono text-xs text-muted-foreground">
-                  <span>{loading ? "LOADING" : `${selectedEvents.length} LOADED`}</span>
-                  {hasMore && <Button variant="outline" className="rounded-sm" disabled={loading} onClick={onLoadMore}>Load more</Button>}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3 font-mono text-xs text-muted-foreground">
+                  <span>{loading ? "LOADING" : pageEnd ? hasMore ? "PAGE END · NEXT PAGE" : "SESSION END" : `${selectedEvents.length} ON PAGE`}</span>
+                  <div className="flex gap-2">
+                    {hasPrevious && <Button variant="outline" className="rounded-sm" disabled={loading} onClick={() => changePage("previous")}>Previous page</Button>}
+                    {hasMore && <Button variant="outline" className="rounded-sm" disabled={loading} onClick={() => changePage("next")}>Next page</Button>}
+                  </div>
                 </div>
               </>}
               {!selectedSession && <div className="font-mono text-xs text-muted-foreground">SELECT SESSION</div>}

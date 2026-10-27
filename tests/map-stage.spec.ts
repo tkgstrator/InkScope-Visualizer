@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test"
+import { readFileSync } from "node:fs"
+
+const packetFixture = JSON.parse(readFileSync(new URL("../api/fixtures/packet-v1.json", import.meta.url), "utf8"))
 
 async function chooseStage(page: import("@playwright/test").Page, stageId: string) {
   await page.getByRole("combobox", { name: "Stage" }).click()
@@ -88,4 +91,86 @@ test("3D canvas fills the main view with accessible floating controls", async ({
   await page.setViewportSize({ width: 375, height: 800 })
   await expect(page.getByRole("combobox", { name: "Stage" })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})
+
+test("live map shows static stage exploration without demo player positions", async ({ page }) => {
+  await page.routeWebSocket("**/api/live", (socket) => {
+    socket.send(JSON.stringify({ version: 1, type: "hello", mode: "memory" }))
+    socket.send(JSON.stringify({ version: 1, type: "snapshot", events: [] }))
+  })
+  await page.goto("/?source=live")
+  await page.getByRole("tab", { name: /3D Map/ }).click()
+
+  await expect(page.getByRole("combobox", { name: "Stage" })).toContainText("Cop_Shakedent")
+  await expect(page.getByRole("region", { name: "Map character" }).getByText("XYZ —")).toBeVisible()
+  await expect(page.getByRole("region", { name: "Map character" }).getByRole("combobox", { name: "Character" })).toHaveCount(0)
+  await expect(page.getByText("MANUAL STAGE", { exact: true })).toBeVisible()
+
+  await page.getByRole("button", { name: "View from +Y" }).click()
+  await expect(page.getByRole("button", { name: "View from +Y" })).toHaveAttribute("aria-pressed", "true")
+  await chooseStage(page, "Cop_Carousel")
+  await expect(page.getByText("38/116 ROMFS MARKERS · All")).toBeVisible()
+  await expect(page.getByText("MANUAL STAGE", { exact: true })).toBeVisible()
+})
+
+test("authenticated stage and tide select a known RomFS map but manual exploration stays distinct", async ({ page }) => {
+  const event = { ...packetFixture, rows: [{
+    kind: "PrivateSetting", status: "authenticated", fields: [
+      { name: "StageId", value: "Cop_Carousel" }, { name: "Tide", value: "High" },
+    ],
+  }] }
+  await page.routeWebSocket("**/api/live", (socket) => {
+    socket.send(JSON.stringify({ version: 1, type: "hello", mode: "memory" }))
+    socket.send(JSON.stringify({ version: 1, type: "snapshot", events: [event] }))
+  })
+
+  await page.goto("/?source=live")
+  await page.getByRole("tab", { name: /3D Map/ }).click()
+  await expect(page.getByRole("combobox", { name: "Stage" })).toContainText("Cop_Carousel")
+  await expect(page.getByText("OBSERVED STAGE", { exact: true })).toBeVisible()
+  await expect(page.getByText("OBSERVED TIDE HIGH", { exact: true })).toBeVisible()
+  await expect(page.getByRole("combobox", { name: "Static marker layer" })).toContainText("High tide")
+
+  await chooseStage(page, "Cop_Shakedent")
+  await expect(page.getByText("MANUAL STAGE", { exact: true })).toBeVisible()
+  await expect(page.getByText("OBSERVED Cop_Carousel", { exact: true })).toBeVisible()
+  await expect(page.getByRole("combobox", { name: "Static marker layer" })).toContainText("All layers")
+  await chooseStage(page, "Cop_Carousel")
+  await expect(page.getByText("MANUAL STAGE", { exact: true })).toBeVisible()
+})
+
+test("unknown observed StageId leaves the static map explicitly manual", async ({ page }) => {
+  const event = { ...packetFixture, rows: [{
+    kind: "PrivateSetting", status: "authenticated", fields: [{ name: "StageId", value: "Cop_UnknownNewStage" }],
+  }] }
+  await page.routeWebSocket("**/api/live", (socket) => {
+    socket.send(JSON.stringify({ version: 1, type: "hello", mode: "memory" }))
+    socket.send(JSON.stringify({ version: 1, type: "snapshot", events: [event] }))
+  })
+
+  await page.goto("/?source=live")
+  await page.getByRole("tab", { name: /3D Map/ }).click()
+  await expect(page.getByRole("combobox", { name: "Stage" })).toContainText("Cop_Shakedent")
+  await expect(page.getByText("MANUAL STAGE", { exact: true })).toBeVisible()
+  await expect(page.getByText("OBSERVED Cop_UnknownNewStage · NO ROMFS MAP", { exact: true })).toBeVisible()
+})
+
+test("an observed stage cleared by a later packet remains labeled as a previous selection", async ({ page }) => {
+  const stage = { ...packetFixture, rows: [{ kind: "PrivateSetting", status: "authenticated", fields: [{ name: "StageId", value: "Cop_Carousel" }] }] }
+  let sendPacket: (message: string) => void = () => {}
+  await page.routeWebSocket("**/api/live", (socket) => {
+    sendPacket = (message) => socket.send(message)
+    socket.send(JSON.stringify({ version: 1, type: "hello", mode: "memory" }))
+    socket.send(JSON.stringify({ version: 1, type: "snapshot", events: [stage] }))
+  })
+
+  await page.goto("/?source=live")
+  await page.getByRole("tab", { name: /3D Map/ }).click()
+  await expect(page.getByText("OBSERVED STAGE", { exact: true })).toBeVisible()
+  sendPacket(JSON.stringify({ version: 1, type: "packet", event: {
+    ...stage, record: "2", rows: [{ kind: "PrivateSetting", status: "authenticated", fields: [{ name: "StageId", value: "" }] }],
+  } }))
+  await expect(page.getByText("PREVIOUS STAGE", { exact: true })).toBeVisible()
+  await expect(page.getByText("OBSERVED Unknown", { exact: true })).toBeVisible()
+  await expect(page.getByRole("combobox", { name: "Stage" })).toContainText("Cop_Carousel")
 })

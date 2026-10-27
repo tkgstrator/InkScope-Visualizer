@@ -1,23 +1,59 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import type { PacketEnvelope } from "../../../api/wire"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { parsePacketEnvelope, type PacketEnvelope } from "../../../api/wire"
 import type { ReplaySession } from "@/views/replay-view"
 
-const pageSize = 100
+export const replayPageSize = 100
+const minimumDelayMs = 50
+const maximumDelayMs = 2_000
+
+type PageCursor = { afterRecord: string | null; startIndex: number }
+
+export function hasNextReplayPage(total: string, startIndex: number, loaded: number): boolean {
+  if (loaded === 0) return false
+  try {
+    return BigInt(startIndex) + BigInt(loaded) < BigInt(total)
+  } catch {
+    return false
+  }
+}
+
+/** Capture-time delay from the current record to the next record on this page. */
+export function replayDelayMs(events: readonly PacketEnvelope[], currentIndex: number): number | null {
+  const current = events[currentIndex]
+  const next = events[currentIndex + 1]
+  if (!current || !next) return null
+  try {
+    const deltaNs = BigInt(next.timestamp_ns) - BigInt(current.timestamp_ns)
+    if (deltaNs <= 0n) return minimumDelayMs
+    const maxNs = BigInt(maximumDelayMs) * 1_000_000n
+    if (deltaNs >= maxNs) return maximumDelayMs
+    return Math.max(minimumDelayMs, Number(deltaNs / 1_000_000n))
+  } catch {
+    return minimumDelayMs
+  }
+}
 
 export function useReplayArchive(enabled: boolean) {
   const [sessions, setSessions] = useState<ReplaySession[]>([])
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
-  const [events, setEvents] = useState<PacketEnvelope[]>([])
-  const [loading, setLoading] = useState(false)
+  const [selectedEvents, setSelectedEvents] = useState<PacketEnvelope[]>([])
+  const [cursor, setCursor] = useState<PageCursor>({ afterRecord: null, startIndex: 0 })
+  const [previousPages, setPreviousPages] = useState<PageCursor[]>([])
+  const [sessionsLoading, setSessionsLoading] = useState(false)
+  const [eventsLoading, setEventsLoading] = useState(false)
+  const loading = sessionsLoading || eventsLoading
   const [error, setError] = useState<string | null>(null)
-  const [hasMore, setHasMore] = useState(false)
   const pending = useRef(false)
   const generation = useRef(0)
+  const activeRequest = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    if (!enabled) return
+    if (!enabled) {
+      setSessionsLoading(false)
+      return
+    }
     const controller = new AbortController()
-    setLoading(true)
+    setSessionsLoading(true)
     setError(null)
     void fetch("/api/sessions", { signal: controller.signal })
       .then(async (response) => {
@@ -26,62 +62,125 @@ export function useReplayArchive(enabled: boolean) {
       })
       .then((data) => {
         if (!Array.isArray(data.sessions)) throw new Error("Invalid sessions")
+        if (controller.signal.aborted) return
         setSessions(data.sessions)
         setSelectedSessionId((current) => current && data.sessions.some((session) => session.session_id === current) ? current : data.sessions[0]?.session_id ?? null)
       })
       .catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Fetch failed") })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
+      .finally(() => { if (!controller.signal.aborted) setSessionsLoading(false) })
     return () => controller.abort()
   }, [enabled])
 
   useEffect(() => {
     if (!enabled || !selectedSessionId) return
+    const controller = new AbortController()
+    let pending = false
+    const timer = window.setInterval(() => {
+      if (pending) return
+      pending = true
+      void fetch("/api/sessions", { signal: controller.signal })
+        .then(async (response) => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          return response.json() as Promise<{ sessions: ReplaySession[] }>
+        })
+        .then((data) => {
+          if (controller.signal.aborted || !Array.isArray(data.sessions)) return
+          setSessions((current) => {
+            const selected = current.find((session) => session.session_id === selectedSessionId)
+            return selected && !data.sessions.some((session) => session.session_id === selectedSessionId)
+              ? [selected, ...data.sessions]
+              : data.sessions
+          })
+        })
+        .catch(() => undefined)
+        .finally(() => { pending = false })
+    }, 5_000)
+    return () => { window.clearInterval(timer); controller.abort() }
+  }, [enabled, selectedSessionId])
+
+  useEffect(() => {
+    if (!enabled || !selectedSessionId) {
+      pending.current = false
+      setEventsLoading(false)
+      setSelectedEvents([])
+      return
+    }
     const currentGeneration = ++generation.current
     const controller = new AbortController()
+    activeRequest.current = controller
     pending.current = true
-    setLoading(true)
+    setEventsLoading(true)
     setError(null)
-    setEvents([])
-    setHasMore(false)
-    const url = `/api/sessions/${encodeURIComponent(selectedSessionId)}/events?limit=${pageSize}`
+    setSelectedEvents([])
+    const cursorQuery = cursor.afterRecord === null ? "" : `&after_record=${encodeURIComponent(cursor.afterRecord)}`
+    const url = `/api/sessions/${encodeURIComponent(selectedSessionId)}/events?limit=${replayPageSize}${cursorQuery}`
     void fetch(url, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
         return response.json() as Promise<{ events: PacketEnvelope[] }>
       })
       .then((data) => {
-        if (currentGeneration !== generation.current) return
+        if (controller.signal.aborted || currentGeneration !== generation.current) return
         if (!Array.isArray(data.events)) throw new Error("Invalid events")
-        setEvents(data.events)
-        setHasMore(data.events.length === pageSize)
+        setSelectedEvents(data.events.slice(0, replayPageSize).map((event) => parsePacketEnvelope(JSON.stringify(event))))
       })
-      .catch((cause: unknown) => { if (!controller.signal.aborted && currentGeneration === generation.current) setError(cause instanceof Error ? cause.message : "Fetch failed") })
-      .finally(() => { if (currentGeneration === generation.current) { pending.current = false; setLoading(false) } })
-    return () => { controller.abort(); generation.current++ }
-  }, [enabled, selectedSessionId])
+      .catch((cause: unknown) => {
+        if (!controller.signal.aborted && currentGeneration === generation.current) setError(cause instanceof Error ? cause.message : "Fetch failed")
+      })
+      .finally(() => {
+        if (controller.signal.aborted || currentGeneration !== generation.current) return
+        activeRequest.current = null
+        pending.current = false
+        setEventsLoading(false)
+      })
+    return () => {
+      controller.abort()
+      if (activeRequest.current === controller) activeRequest.current = null
+      generation.current++
+      pending.current = false
+    }
+  }, [enabled, selectedSessionId, cursor])
+
+  const selectedSession = sessions.find((session) => session.session_id === selectedSessionId)
+  const hasMore = useMemo(() => selectedSession ? hasNextReplayPage(selectedSession.events, cursor.startIndex, selectedEvents.length) : false,
+    [selectedSession, cursor.startIndex, selectedEvents.length])
+
+  const selectSession = useCallback((sessionId: string) => {
+    if (sessionId === selectedSessionId) return
+    activeRequest.current?.abort()
+    activeRequest.current = null
+    generation.current++
+    pending.current = false
+    setSelectedSessionId(sessionId)
+    setCursor({ afterRecord: null, startIndex: 0 })
+    setPreviousPages([])
+    setSelectedEvents([])
+    setError(null)
+    setEventsLoading(true)
+  }, [selectedSessionId])
 
   const loadMore = useCallback(() => {
-    if (!enabled || !selectedSessionId || pending.current || !hasMore || events.length === 0) return
-    pending.current = true
-    setLoading(true)
-    setError(null)
-    const currentGeneration = generation.current
-    const lastRecord = events.at(-1)!.record
-    const url = `/api/sessions/${encodeURIComponent(selectedSessionId)}/events?after_record=${encodeURIComponent(lastRecord)}&limit=${pageSize}`
-    void fetch(url)
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        return response.json() as Promise<{ events: PacketEnvelope[] }>
-      })
-      .then((data) => {
-        if (currentGeneration !== generation.current) return
-        if (!Array.isArray(data.events)) throw new Error("Invalid events")
-        setEvents((current) => [...current, ...data.events])
-        setHasMore(data.events.length === pageSize)
-      })
-      .catch((cause: unknown) => { if (currentGeneration === generation.current) setError(cause instanceof Error ? cause.message : "Fetch failed") })
-      .finally(() => { if (currentGeneration === generation.current) { pending.current = false; setLoading(false) } })
-  }, [enabled, selectedSessionId, hasMore, events])
+    if (!enabled || !selectedSessionId || loading || pending.current || !hasMore) return
+    const lastRecord = selectedEvents.at(-1)?.record
+    if (!lastRecord) return
+    setPreviousPages((current) => [...current, cursor])
+    setCursor({ afterRecord: lastRecord, startIndex: cursor.startIndex + selectedEvents.length })
+    setSelectedEvents([])
+    setEventsLoading(true)
+  }, [enabled, selectedSessionId, loading, hasMore, selectedEvents, cursor])
 
-  return { sessions, selectedSessionId, selectedEvents: events, loading, error, hasMore, selectSession: setSelectedSessionId, loadMore }
+  const loadPrevious = useCallback(() => {
+    if (!enabled || !selectedSessionId || loading || pending.current || previousPages.length === 0) return
+    const previous = previousPages.at(-1)!
+    setPreviousPages((current) => current.slice(0, -1))
+    setCursor(previous)
+    setSelectedEvents([])
+    setEventsLoading(true)
+  }, [enabled, selectedSessionId, loading, previousPages])
+
+  return {
+    sessions, selectedSessionId, selectedEvents, loading, error, hasMore,
+    hasPrevious: previousPages.length > 0, pageNumber: previousPages.length + 1,
+    pageStartIndex: cursor.startIndex, selectSession, loadMore, loadPrevious,
+  }
 }

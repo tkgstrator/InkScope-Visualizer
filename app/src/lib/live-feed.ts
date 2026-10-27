@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react"
 import type { OverlayPacket, PacketEnvelope } from "../../../api/wire"
+import { emptySessionObservation, foldObservation } from "./session-observation"
+import type { SessionObservation } from "./session-observation"
 
 export type LiveGap = {
   sessionId: string
@@ -12,13 +14,14 @@ export type LiveFeedState = {
   persistence: "memory" | "postgres" | null
   events: PacketEnvelope[]
   gaps: LiveGap[]
+  observation: SessionObservation
 }
 
-const emptyFeed: LiveFeedState = {
-  connection: "idle",
-  persistence: null,
-  events: [],
-  gaps: [],
+export function emptyLiveFeed(): LiveFeedState {
+  return {
+    connection: "idle", persistence: null, events: [], gaps: [],
+    observation: emptySessionObservation(),
+  }
 }
 
 function isPacket(value: unknown): value is PacketEnvelope {
@@ -30,16 +33,38 @@ function isPacket(value: unknown): value is PacketEnvelope {
     Boolean(event.packet && typeof event.packet.payload_hex === "string")
 }
 
-function sameRecord(left: PacketEnvelope, right: PacketEnvelope): boolean {
-  return left.session_id === right.session_id && left.record === right.record
+export function applyLiveSnapshot(current: LiveFeedState, events: PacketEnvelope[]): LiveFeedState {
+  const validEvents = events.filter((event) => /^(0|[1-9][0-9]{0,19})$/.test(event.record) && BigInt(event.record) <= 18_446_744_073_709_551_615n)
+  const lastSession = validEvents.at(-1)?.session_id
+  if (!lastSession) return { ...current, connection: "connected" }
+  const sessionEvents = validEvents.filter((event) => event.session_id === lastSession)
+  return sessionEvents
+    .sort((left, right) => {
+      const a = BigInt(left.record)
+      const b = BigInt(right.record)
+      return a < b ? -1 : a > b ? 1 : 0
+    })
+    .reduce(applyLivePacket, { ...current, connection: "connected" })
+}
+
+export function applyLivePacket(current: LiveFeedState, event: PacketEnvelope): LiveFeedState {
+  const observation = foldObservation(current.observation, event)
+  if (observation === current.observation) return current
+  const sameSession = current.observation.sessionId === event.session_id
+  const hostReset = sameSession && current.observation.host !== null && observation.host !== current.observation.host
+  return {
+    ...current,
+    observation,
+    events: [...(sameSession && !hostReset ? current.events : []), event].slice(-512),
+  }
 }
 
 export function useLiveFeed(enabled: boolean): LiveFeedState {
-  const [state, setState] = useState<LiveFeedState>(emptyFeed)
+  const [state, setState] = useState<LiveFeedState>(emptyLiveFeed)
 
   useEffect(() => {
     if (!enabled) {
-      setState(emptyFeed)
+      setState(emptyLiveFeed())
       return
     }
 
@@ -67,12 +92,9 @@ export function useLiveFeed(enabled: boolean): LiveFeedState {
           setState((current) => ({ ...current, persistence: data.mode as "memory" | "postgres", connection: "connected" }))
         } else if (data.type === "snapshot" && Array.isArray(data.events)) {
           const events = data.events.filter(isPacket).slice(-512)
-          setState((current) => ({ ...current, events, connection: "connected" }))
+          setState((current) => applyLiveSnapshot(current, events))
         } else if (data.type === "packet" && isPacket(data.event)) {
-          const event = data.event
-          setState((current) => sameRecord(current.events.at(-1) ?? event, event)
-            ? current.events.length === 0 ? { ...current, events: [event] } : current
-            : { ...current, events: [...current.events.filter((item) => !sameRecord(item, event)), event].slice(-512) })
+          setState((current) => applyLivePacket(current, data.event as PacketEnvelope))
         } else if (data.type === "gap" && typeof data.session_id === "string" && typeof data.expected_record === "string" && typeof data.actual_record === "string") {
           setState((current) => ({ ...current, gaps: [...current.gaps, {
             sessionId: data.session_id as string,

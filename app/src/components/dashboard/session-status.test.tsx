@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 import { renderToStaticMarkup } from "react-dom/server"
 import { SessionStatus } from "./session-status"
 import type { PacketEnvelope } from "../../../../api/wire"
+import { emptySessionObservation, foldObservationSnapshot } from "../../lib/session-observation"
 
 function event(record: string, kind: string, fields: Array<{ name: string; value: string }>, options: {
   status?: string
@@ -18,10 +19,21 @@ function event(record: string, kind: string, fields: Array<{ name: string; value
 }
 
 function html(events: PacketEnvelope[]): string {
-  return renderToStaticMarkup(<SessionStatus source="live" connection="connected" liveEvents={events} serverRtt="0" clientRtt="0" wave={1} quota={0} />)
+  return renderToStaticMarkup(<SessionStatus source="live" connection="connected" observation={foldObservationSnapshot(emptySessionObservation(), events)} serverRtt="0" clientRtt="0" wave={1} quota={0} />)
 }
 
 describe("observed PrivateSetting status", () => {
+  it("renders cumulative observation even when the visible event window has another stage", () => {
+    const observation = foldObservationSnapshot(emptySessionObservation(), [
+      event("1", "PrivateSetting", [{ name: "StageId", value: "Cop_Trusted" }, { name: "Wave", value: "2" }, { name: "Tide", value: "High" }]),
+      ...Array.from({ length: 513 }, (_, index) => event(String(index + 2), "Net 0x32", [], { status: "observed_unverified" })),
+    ])
+    const markup = renderToStaticMarkup(<SessionStatus source="live" observation={observation} serverRtt="0" clientRtt="0" wave={1} quota={0} />)
+    expect(markup).toContain("Cop_Trusted")
+    expect(markup).toContain("High")
+    expect(markup).toContain("WAVE</span><b>2</b>")
+  })
+
   it("prefers authenticated PrivateSetting over older stage and difficulty fields", () => {
     const markup = html([
       event("1", "OnlineCoopSetting", [{ name: "StageResource", value: "Cop_Old" }, { name: "Difficulty", value: "25" }]),

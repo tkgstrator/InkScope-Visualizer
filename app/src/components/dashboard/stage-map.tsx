@@ -83,12 +83,19 @@ function supportsWebGL(): boolean {
   }
 }
 
-export function StageMap({ tick, observedStageId }: { tick: number; observedStageId?: string }) {
+export function StageMap({ tick, source, observedStageId, observedTide, connection = "connected" }: {
+  tick: number
+  source: "demo" | "live" | "replay"
+  observedStageId?: string | null
+  observedTide?: TideLayer | null
+  connection?: "idle" | "connecting" | "connected" | "disconnected"
+}) {
   const [catalog, setCatalog] = useState<CatalogStage[]>([])
   const [catalogError, setCatalogError] = useState(false)
   const [selectedStageId, setSelectedStageId] = useState("Cop_Shakedent")
+  const [stageOrigin, setStageOrigin] = useState<"manual" | "observed" | "previous">("manual")
   const selectedStage = catalog.find((stage) => stage.stageId === selectedStageId) ?? null
-  const points = useMemo(() => selectedStageId === "Cop_Shakedent" ? stagePoints(tick) : [], [selectedStageId, tick])
+  const points = useMemo(() => source === "demo" && selectedStageId === "Cop_Shakedent" ? stagePoints(tick) : [], [source, selectedStageId, tick])
   const players = points.filter((point) => point.kind === "player")
   const [selectedPlayer, setSelectedPlayer] = useState(players[0]?.name ?? "")
   const [characterMode, setCharacterMode] = useState(false)
@@ -118,7 +125,8 @@ export function StageMap({ tick, observedStageId }: { tick: number; observedStag
   const waterY = tide ? selectedStage?.waterLevelLocators[tide].y ?? null : null
   const cameraReady = webgl && selectedStage !== null && markersLoaded
 
-  function chooseStage(stageId: string) {
+  function chooseStage(stageId: string, origin: "manual" | "observed" = "manual") {
+    setStageOrigin(origin)
     if (stageId === selectedStageId) return
     setTerrainState("checking")
     setMarkers([])
@@ -154,8 +162,10 @@ export function StageMap({ tick, observedStageId }: { tick: number; observedStag
   }, [])
 
   useEffect(() => {
-    if (observedStageId && catalog.some((stage) => stage.stageId === observedStageId)) chooseStage(observedStageId)
-  }, [catalog, observedStageId])
+    if (source === "demo") return
+    if (observedStageId && catalog.some((stage) => stage.stageId === observedStageId)) chooseStage(observedStageId, "observed")
+    else setStageOrigin((current) => current === "observed" ? "previous" : current)
+  }, [catalog, observedStageId, source])
 
   useEffect(() => {
     if (!selectedStage) return
@@ -164,7 +174,7 @@ export function StageMap({ tick, observedStageId }: { tick: number; observedStag
     setAction({ kind: "home", sequence: 0 })
     setActiveView("home")
     setCharacterMode(false)
-    setSelectedPlayer(selectedStage.stageId === "Cop_Shakedent" ? stagePoints(0).find((point) => point.kind === "player")?.name ?? "" : "")
+    setSelectedPlayer(source === "demo" && selectedStage.stageId === "Cop_Shakedent" ? stagePoints(0).find((point) => point.kind === "player")?.name ?? "" : "")
     setMarkerLayer("All")
     setSelectedMarker(null)
     setMarkers([])
@@ -222,7 +232,12 @@ export function StageMap({ tick, observedStageId }: { tick: number; observedStag
         })
     } else setTerrainState("absent")
     return () => controller.abort()
-  }, [selectedStage])
+  }, [selectedStage, source])
+
+  useEffect(() => {
+    if (source === "demo") return
+    setMarkerLayer(selectedStage && selectedStage.stageId === observedStageId ? observedTide ?? "All" : "All")
+  }, [source, selectedStage, observedStageId, observedTide])
 
   function viewFrom(axis: AxisView) {
     setCharacterMode(false)
@@ -334,13 +349,18 @@ export function StageMap({ tick, observedStageId }: { tick: number; observedStag
           <section className="pointer-events-auto w-[min(310px,100%)] rounded-sm border bg-sidebar/90 p-2 backdrop-blur-md" aria-label="Map status and stage">
             <div className="flex items-baseline justify-between gap-2">
               <h2 className="text-sm font-semibold">Map &amp; position</h2>
-              <span className="font-mono text-xs text-muted-foreground">ROMFS · 11.3.0</span>
+              <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground">ROMFS · 11.3.0{source === "live" && connection !== "connected" && <Badge variant="outline" className="rounded-sm text-xs">{connection.toUpperCase()}</Badge>}</span>
             </div>
             <label className="mt-2 block font-mono text-xs text-muted-foreground">STAGE</label>
-            <Select value={selectedStageId} onValueChange={chooseStage} disabled={catalog.length === 0}>
+            <Select value={selectedStageId} onValueChange={(value) => chooseStage(value)} disabled={catalog.length === 0}>
               <SelectTrigger className="mt-1 w-full rounded-sm" aria-label="Stage"><SelectValue placeholder="Loading stages…" /></SelectTrigger>
               <SelectContent>{catalog.map((stage) => <SelectItem key={stage.stageId} value={stage.stageId}>{stage.stageId}</SelectItem>)}</SelectContent>
             </Select>
+            {source !== "demo" && <div className="mt-1 flex flex-wrap items-center gap-1 font-mono text-xs text-muted-foreground">
+              <Badge variant="outline" className="rounded-sm text-xs">{stageOrigin === "observed" && selectedStage && selectedStage.stageId === observedStageId ? "OBSERVED STAGE" : stageOrigin === "previous" ? "PREVIOUS STAGE" : "MANUAL STAGE"}</Badge>
+              <span className="break-all">{observedStageId ? catalog.some((stage) => stage.stageId === observedStageId) ? `OBSERVED ${observedStageId}` : `OBSERVED ${observedStageId} · NO ROMFS MAP` : "OBSERVED Unknown"}</span>
+              {observedTide && <Badge variant="outline" className="rounded-sm text-xs">OBSERVED TIDE {observedTide.toUpperCase()}</Badge>}
+            </div>}
             <div className="mt-2 flex items-center gap-2">
               <span className="shrink-0 font-mono text-xs text-muted-foreground">LAYER</span>
               <Select value={markerLayer} disabled={!selectedStage || !markersLoaded} onValueChange={(value) => { setMarkerLayer(value as MarkerLayer); setSelectedMarker(null) }}>
