@@ -1,0 +1,1947 @@
+{
+  "schemaVersion": 1,
+  "stageId": "Cop_Shakehighway",
+  "gameVersion": "11.3.0",
+  "kind": "static_banc_enemy_related_anchors",
+  "coordinateSystem": {
+    "components": [
+      "x",
+      "y",
+      "z"
+    ],
+    "displayUpAxis": "y",
+    "unit": "game_coordinate_unit_unverified",
+    "rotation": "raw_Banc_values_unverified"
+  },
+  "source": {
+    "scenePack": {
+      "romfsPath": "Pack/Scene/Cop_Shakehighway.pack.zs",
+      "sha256": "5b43740676c0fbfcef3b34ebadc9c4698171c8b14b3e6ebf3a2587901b75ec8c"
+    },
+    "bancEntry": "Banc/Cop_Shakehighway.bcett.byml",
+    "bancSha256": "4d0ad8d891d31bdcfae83674dbaf3b9042d78180a4dfc93042964220aedce01c"
+  },
+  "counts": {
+    "geyser": 8,
+    "jumpRoute": 31,
+    "towerArrival": 35,
+    "artilleryGun": 8
+  },
+  "markers": [
+    {
+      "actorIndex": 71,
+      "actor": "CoopSpawnGeyser",
+      "layer": "High",
+      "hash": "0xc4cab373404928de",
+      "position": [
+        -18.5,
+        13.5,
+        74.25
+      ],
+      "positionBits": [
+        "0xc1940000",
+        "0x41580000",
+        "0x42948000"
+      ],
+      "rotationRaw": [
+        3.141593,
+        1.047197,
+        -3.141593
+      ],
+      "rotationBits": [
+        "0x40490fda",
+        "0x3f860a91",
+        "0xc0490fda"
+      ],
+      "kind": "geyser"
+    },
+    {
+      "actorIndex": 72,
+      "actor": "CoopSpawnGeyser",
+      "layer": "High",
+      "hash": "0xdc74f66a6930718a",
+      "position": [
+        23.5,
+        13.5,
+        42.5
+      ],
+      "positionBits": [
+        "0x41bc0000",
+        "0x41580000",
+        "0x422a0000"
+      ],
+      "kind": "geyser"
+    },
+    {
+      "actorIndex": 73,
+      "actor": "CoopSpawnGeyser",
+      "layer": "High",
+      "hash": "0x8bcb7a648f3fc8af",
+      "position": [
+        20.0,
+        12.0,
+        74.25
+      ],
+      "positionBits": [
+        "0x41a00000",
+        "0x41400000",
+        "0x42948000"
+      ],
+      "rotationRaw": [
+        3.141593,
+        -0.785398,
+        3.141593
+      ],
+      "rotationBits": [
+        "0x40490fdb",
+        "0xbf490fdc",
+        "0x40490fdb"
+      ],
+      "kind": "geyser"
+    },
+    {
+      "actorIndex": 74,
+      "actor": "CoopSpawnGeyser",
+      "layer": "High",
+      "hash": "0x6884c92f5248678b",
+      "position": [
+        -27.5,
+        10.0,
+        38.5
+      ],
+      "positionBits": [
+        "0xc1dc0000",
+        "0x41200000",
+        "0x421a0000"
+      ],
+      "rotationRaw": [
+        0.0,
+        0.349066,
+        0.0
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0x3eb2b8c4",
+        "0x00000000"
+      ],
+      "kind": "geyser"
+    },
+    {
+      "actorIndex": 75,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "High",
+      "hash": "0x92cb4c054012d469",
+      "position": [
+        21.148523,
+        13.0,
+        63.487152
+      ],
+      "positionBits": [
+        "0x41a9302d",
+        "0x41500000",
+        "0x427df2d8"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": []
+    },
+    {
+      "actorIndex": 76,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "High",
+      "hash": "0x1bc1330083ee94d5",
+      "position": [
+        -0.101477,
+        13.5,
+        75.487152
+      ],
+      "positionBits": [
+        "0xbdcfd300",
+        "0x41580000",
+        "0x4296f96c"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        78,
+        79,
+        80,
+        75
+      ]
+    },
+    {
+      "actorIndex": 77,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "High",
+      "hash": "0x437604a28e5bec27",
+      "position": [
+        -23.811735,
+        10.0,
+        42.995167
+      ],
+      "positionBits": [
+        "0xc1be7e6f",
+        "0x41200000",
+        "0x422bfb0d"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        79
+      ]
+    },
+    {
+      "actorIndex": 78,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "High",
+      "hash": "0xa25d64a0bd895f0a",
+      "position": [
+        3.784683,
+        12.0,
+        63.836098
+      ],
+      "positionBits": [
+        "0x40723840",
+        "0x41400000",
+        "0x427f582a"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        75
+      ]
+    },
+    {
+      "actorIndex": 79,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "High",
+      "hash": "0x0f9474eee72b31f4",
+      "position": [
+        -10.965317,
+        12.0,
+        63.836098
+      ],
+      "positionBits": [
+        "0xc12f71f0",
+        "0x41400000",
+        "0x427f582a"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        80,
+        78
+      ]
+    },
+    {
+      "actorIndex": 80,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "High",
+      "hash": "0x40593b293e57ea6f",
+      "position": [
+        -22.184513,
+        13.5,
+        73.092262
+      ],
+      "positionBits": [
+        "0xc1b179e2",
+        "0x41580000",
+        "0x42922f3d"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": []
+    },
+    {
+      "actorIndex": 81,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "High",
+      "hash": "0xb2d86377dea2db4e",
+      "position": [
+        16.00729,
+        10.893168,
+        60.295967
+      ],
+      "positionBits": [
+        "0x41800eee",
+        "0x412e4a6b",
+        "0x42712f12"
+      ],
+      "rotationRaw": [
+        -0.231091,
+        -0.0,
+        0.0
+      ],
+      "rotationBits": [
+        "0xbe6ca308",
+        "0x80000000",
+        "0x00000000"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 82,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "High",
+      "hash": "0x24b0db613890ddf0",
+      "position": [
+        14.190395,
+        11.649443,
+        63.510132
+      ],
+      "positionBits": [
+        "0x41630bdc",
+        "0x413a641e",
+        "0x427e0a60"
+      ],
+      "rotationRaw": [
+        -0.231091,
+        -0.0,
+        0.0
+      ],
+      "rotationBits": [
+        "0xbe6ca308",
+        "0x80000000",
+        "0x00000000"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 83,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "High",
+      "hash": "0x508d2d5270498292",
+      "position": [
+        11.549234,
+        10.695156,
+        59.454414
+      ],
+      "positionBits": [
+        "0x4138c9aa",
+        "0x412b1f5c",
+        "0x426dd152"
+      ],
+      "rotationRaw": [
+        -0.231091,
+        -0.0,
+        0.0
+      ],
+      "rotationBits": [
+        "0xbe6ca308",
+        "0x80000000",
+        "0x00000000"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 84,
+      "actor": "CoopArrivalPointEnemyTower1",
+      "layer": "High",
+      "hash": "0x1612b36c52092eec",
+      "position": [
+        -13.846091,
+        12.0,
+        60.954872
+      ],
+      "positionBits": [
+        "0xc15d8997",
+        "0x41400000",
+        "0x4273d1ca"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 85,
+      "actor": "CoopArrivalPointEnemyTower1",
+      "layer": "High",
+      "hash": "0x81814e8b5ded6d91",
+      "position": [
+        -18.0047,
+        11.276006,
+        56.880028
+      ],
+      "positionBits": [
+        "0xc19009a0",
+        "0x41346a85",
+        "0x42638526"
+      ],
+      "rotationRaw": [
+        -0.197396,
+        -0.0,
+        0.0
+      ],
+      "rotationBits": [
+        "0xbe4a2210",
+        "0x80000000",
+        "0x00000000"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 86,
+      "actor": "CoopArrivalPointEnemyTower1",
+      "layer": "High",
+      "hash": "0xa54ab61381e9719b",
+      "position": [
+        -18.091427,
+        12.0,
+        61.223846
+      ],
+      "positionBits": [
+        "0xc190bb3e",
+        "0x41400000",
+        "0x4274e538"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 87,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "High",
+      "hash": "0xee25362d0db62ba6",
+      "position": [
+        -23.918213,
+        12.0,
+        58.328186
+      ],
+      "positionBits": [
+        "0xc1bf5880",
+        "0x41400000",
+        "0x42695010"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 88,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "High",
+      "hash": "0x08c46b1998d60e17",
+      "position": [
+        -22.930195,
+        12.0,
+        65.695023
+      ],
+      "positionBits": [
+        "0xc1b7710a",
+        "0x41400000",
+        "0x428363da"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 89,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "High",
+      "hash": "0x2719b6bfdd4b46c4",
+      "position": [
+        -19.897472,
+        12.0,
+        57.341923
+      ],
+      "positionBits": [
+        "0xc19f2e06",
+        "0x41400000",
+        "0x42655e21"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 135,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Mid",
+      "hash": "0x95938585f8b8a2c9",
+      "position": [
+        -1.265555,
+        12.0,
+        62.140739
+      ],
+      "positionBits": [
+        "0xbfa1fdb8",
+        "0x41400000",
+        "0x4278901e"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        136,
+        141,
+        137
+      ]
+    },
+    {
+      "actorIndex": 136,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Mid",
+      "hash": "0xa01c32c261eff6f6",
+      "position": [
+        -20.623859,
+        13.5,
+        74.062508
+      ],
+      "positionBits": [
+        "0xc1a4fdaa",
+        "0x41580000",
+        "0x42942001"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": []
+    },
+    {
+      "actorIndex": 137,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Mid",
+      "hash": "0xbb8cf356f23ff642",
+      "position": [
+        -24.490921,
+        10.0,
+        39.685059
+      ],
+      "positionBits": [
+        "0xc1c3ed68",
+        "0x41200000",
+        "0x421ebd80"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        141,
+        136
+      ]
+    },
+    {
+      "actorIndex": 138,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Mid",
+      "hash": "0x20a3049dd09dbad8",
+      "position": [
+        -7.990921,
+        9.0,
+        28.685059
+      ],
+      "positionBits": [
+        "0xc0ffb5a0",
+        "0x41100000",
+        "0x41e57b00"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        137
+      ]
+    },
+    {
+      "actorIndex": 139,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Mid",
+      "hash": "0xc6fcb79468511604",
+      "position": [
+        9.259079,
+        6.5,
+        29.435059
+      ],
+      "positionBits": [
+        "0x41142530",
+        "0x40d00000",
+        "0x41eb7b00"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        140,
+        141,
+        138
+      ]
+    },
+    {
+      "actorIndex": 140,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Mid",
+      "hash": "0x81820f0dbb50f7c0",
+      "position": [
+        23.458881,
+        13.5,
+        43.439602
+      ],
+      "positionBits": [
+        "0x41bbabca",
+        "0x41580000",
+        "0x422dc227"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": []
+    },
+    {
+      "actorIndex": 141,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Mid",
+      "hash": "0x87b0f13944afcf45",
+      "position": [
+        2.984445,
+        8.0,
+        45.890739
+      ],
+      "positionBits": [
+        "0x403f0124",
+        "0x41000000",
+        "0x4237901e"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        140,
+        138
+      ]
+    },
+    {
+      "actorIndex": 142,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Mid",
+      "hash": "0x70a79eecd44a43ed",
+      "position": [
+        20.619942,
+        13.0,
+        63.644646
+      ],
+      "positionBits": [
+        "0x41a4f5a4",
+        "0x41500000",
+        "0x427e941e"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        135,
+        141,
+        140
+      ]
+    },
+    {
+      "actorIndex": 143,
+      "actor": "CoopSakeArtilleryGunPoint2",
+      "layer": "Mid",
+      "hash": "0x57b1e108f62a2433",
+      "position": [
+        -21.25,
+        7.5,
+        31.0
+      ],
+      "positionBits": [
+        "0xc1aa0000",
+        "0x40f00000",
+        "0x41f80000"
+      ],
+      "kind": "artilleryGun",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 144,
+      "actor": "CoopSakeArtilleryGunPoint1",
+      "layer": "Mid",
+      "hash": "0xbcdf8f00a3004746",
+      "position": [
+        25.342503,
+        6.0,
+        33.45948
+      ],
+      "positionBits": [
+        "0x41cabd72",
+        "0x40c00000",
+        "0x4205d682"
+      ],
+      "kind": "artilleryGun",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 145,
+      "actor": "CoopSakeArtilleryGunPoint0",
+      "layer": "Mid",
+      "hash": "0xd13ba5120495d37d",
+      "position": [
+        -28.685028,
+        6.0,
+        30.573669
+      ],
+      "positionBits": [
+        "0xc1e57af0",
+        "0x40c00000",
+        "0x41f496e0"
+      ],
+      "kind": "artilleryGun",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 146,
+      "actor": "CoopSakeArtilleryGunPoint2",
+      "layer": "Mid",
+      "hash": "0xfccb6574902a2f44",
+      "position": [
+        9.748653,
+        6.5,
+        33.2258
+      ],
+      "positionBits": [
+        "0x411bfa7c",
+        "0x40d00000",
+        "0x4204e738"
+      ],
+      "kind": "artilleryGun",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 149,
+      "actor": "CoopArrivalPointEnemyTower1",
+      "layer": "Mid",
+      "hash": "0x16eecc664c4cacf5",
+      "position": [
+        35.166351,
+        6.0,
+        33.814667
+      ],
+      "positionBits": [
+        "0x420caa58",
+        "0x40c00000",
+        "0x42074238"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 150,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "Mid",
+      "hash": "0x9385889b8f12f4ad",
+      "position": [
+        -29.144547,
+        5.992726,
+        23.651081
+      ],
+      "positionBits": [
+        "0xc1e92808",
+        "0x40bfc469",
+        "0x41bd356a"
+      ],
+      "rotationRaw": [
+        0.087865,
+        0.000748,
+        -0.009193
+      ],
+      "rotationBits": [
+        "0x3db3f2c5",
+        "0x3a440285",
+        "0xbc169ec6"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 151,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "Mid",
+      "hash": "0xed51b673b2a1a58a",
+      "position": [
+        -41.144287,
+        6.0,
+        28.41748
+      ],
+      "positionBits": [
+        "0xc22493c0",
+        "0x40c00000",
+        "0x41e35700"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 152,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "Mid",
+      "hash": "0xce39b1b3a26e8a6a",
+      "position": [
+        8.78648,
+        6.5,
+        24.837646
+      ],
+      "positionBits": [
+        "0x410c956c",
+        "0x40d00000",
+        "0x41c6b380"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 153,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "Mid",
+      "hash": "0x729a5034c0ae2792",
+      "position": [
+        -39.905704,
+        6.0,
+        44.779358
+      ],
+      "positionBits": [
+        "0xc21f9f71",
+        "0x40c00000",
+        "0x42331e10"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 154,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "Mid",
+      "hash": "0x7a56033a35e94930",
+      "position": [
+        2.53648,
+        5.849178,
+        18.548197
+      ],
+      "positionBits": [
+        "0x402255b0",
+        "0x40bb2c78",
+        "0x419462b5"
+      ],
+      "rotationRaw": [
+        -0.145164,
+        -0.0,
+        0.0
+      ],
+      "rotationBits": [
+        "0xbe14a600",
+        "0x80000000",
+        "0x00000000"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 155,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "Mid",
+      "hash": "0xe90da8d96a664156",
+      "position": [
+        -12.07594,
+        7.5,
+        23.376856
+      ],
+      "positionBits": [
+        "0xc141370d",
+        "0x40f00000",
+        "0x41bb03cd"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 156,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "Mid",
+      "hash": "0x7783533cfab311c1",
+      "position": [
+        18.28648,
+        6.5,
+        28.237511
+      ],
+      "positionBits": [
+        "0x41924ab6",
+        "0x40d00000",
+        "0x41e1e66c"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 157,
+      "actor": "CoopArrivalPointEnemyTower1",
+      "layer": "Mid",
+      "hash": "0x45a4e63d22a16c28",
+      "position": [
+        22.776352,
+        6.247072,
+        29.435131
+      ],
+      "positionBits": [
+        "0x41b635f8",
+        "0x40c7e804",
+        "0x41eb7b26"
+      ],
+      "rotationRaw": [
+        0.0,
+        -0.0,
+        -0.110657
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0x80000000",
+        "0xbde2a041"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 158,
+      "actor": "CoopArrivalPointEnemyTower1",
+      "layer": "Mid",
+      "hash": "0x128785b0a7e0a829",
+      "position": [
+        29.01799,
+        6.116074,
+        26.689625
+      ],
+      "positionBits": [
+        "0x41e824d8",
+        "0x40c3b6e1",
+        "0x41d5845a"
+      ],
+      "rotationRaw": [
+        0.088351,
+        -0.000106,
+        -9e-06
+      ],
+      "rotationBits": [
+        "0x3db4f123",
+        "0xb8de267f",
+        "0xb71b8976"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 159,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "Mid",
+      "hash": "0x90e9b3932ed291f5",
+      "position": [
+        -19.825939,
+        7.5,
+        24.833164
+      ],
+      "positionBits": [
+        "0xc19e9b86",
+        "0x40f00000",
+        "0x41c6aa52"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 160,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "Mid",
+      "hash": "0x2609882b1b3b5d5d",
+      "position": [
+        -12.894287,
+        6.034746,
+        41.41748
+      ],
+      "positionBits": [
+        "0xc14e4f00",
+        "0x40c11ca4",
+        "0x4225ab80"
+      ],
+      "rotationRaw": [
+        0.2445,
+        -0.0,
+        -1e-06
+      ],
+      "rotationBits": [
+        "0x3e7a5e40",
+        "0x80000000",
+        "0xb57f3574"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 161,
+      "actor": "CoopArrivalPointEnemyTower1",
+      "layer": "Mid",
+      "hash": "0x0112b4d57444bbe7",
+      "position": [
+        6.776352,
+        6.5,
+        37.185131
+      ],
+      "positionBits": [
+        "0x40d8d7e0",
+        "0x40d00000",
+        "0x4214bd93"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 162,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "Mid",
+      "hash": "0x68ab3050c577f200",
+      "position": [
+        -6.327415,
+        9.0,
+        25.757843
+      ],
+      "positionBits": [
+        "0xc0ca7a30",
+        "0x41100000",
+        "0x41ce1010"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 190,
+      "actor": "CoopSpawnGeyser",
+      "layer": "Mid",
+      "hash": "0x1dd7ac453d223c01",
+      "position": [
+        -36.0,
+        6.0,
+        56.5
+      ],
+      "positionBits": [
+        "0xc2100000",
+        "0x40c00000",
+        "0x42620000"
+      ],
+      "rotationRaw": [
+        0.0,
+        1.570796,
+        0.0
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0x3fc90fdb",
+        "0x00000000"
+      ],
+      "kind": "geyser"
+    },
+    {
+      "actorIndex": 191,
+      "actor": "CoopSpawnGeyser",
+      "layer": "Mid",
+      "hash": "0xb4e24f977a2de7b5",
+      "position": [
+        31.75,
+        6.0,
+        48.5
+      ],
+      "positionBits": [
+        "0x41fe0000",
+        "0x40c00000",
+        "0x42420000"
+      ],
+      "rotationRaw": [
+        0.0,
+        -1.570796,
+        0.0
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0xbfc90fdb",
+        "0x00000000"
+      ],
+      "kind": "geyser"
+    },
+    {
+      "actorIndex": 192,
+      "actor": "CoopSpawnGeyser",
+      "layer": "Mid",
+      "hash": "0xdfe811f88e5a737c",
+      "position": [
+        -16.0,
+        7.5,
+        28.5
+      ],
+      "positionBits": [
+        "0xc1800000",
+        "0x40f00000",
+        "0x41e40000"
+      ],
+      "kind": "geyser"
+    },
+    {
+      "actorIndex": 193,
+      "actor": "CoopSpawnGeyser",
+      "layer": "Mid",
+      "hash": "0x597d36660039e4f6",
+      "position": [
+        3.0,
+        6.5,
+        37.25
+      ],
+      "positionBits": [
+        "0x40400000",
+        "0x40d00000",
+        "0x42150000"
+      ],
+      "kind": "geyser"
+    },
+    {
+      "actorIndex": 297,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "Low",
+      "hash": "0xff8aff09ebf0844a",
+      "position": [
+        10.143753,
+        -0.197656,
+        -47.573769
+      ],
+      "positionBits": [
+        "0x41224cd0",
+        "0xbe4a663c",
+        "0xc23e4b8a"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        0.001448,
+        0.02172
+      ],
+      "rotationBits": [
+        "0xbd8854f1",
+        "0x3abdc72c",
+        "0x3cb1ee4a"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 298,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "Low",
+      "hash": "0x8db70987a9d638ad",
+      "position": [
+        -19.584322,
+        -0.142087,
+        -54.766258
+      ],
+      "positionBits": [
+        "0xc19cacb1",
+        "0xbe117f3b",
+        "0xc25b10a6"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        -0.001737,
+        -0.026064
+      ],
+      "rotationBits": [
+        "0xbd8854f5",
+        "0xbae3b9ce",
+        "0xbcd58460"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 299,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "Low",
+      "hash": "0x560f8f67bc97be16",
+      "position": [
+        3.654754,
+        -0.289443,
+        -47.07692
+      ],
+      "positionBits": [
+        "0x4069e77e",
+        "0xbe9431d7",
+        "0xc23c4ec4"
+      ],
+      "rotationRaw": [
+        -0.066706,
+        -0.064181,
+        0.026101
+      ],
+      "rotationBits": [
+        "0xbd889d02",
+        "0xbd837130",
+        "0x3cd5d245"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 300,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "Low",
+      "hash": "0x8d87959d7a10660e",
+      "position": [
+        -15.914777,
+        -0.289,
+        -55.528339
+      ],
+      "positionBits": [
+        "0xc17ea2ed",
+        "0xbe93f7d4",
+        "0xc25e1d05"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        -0.001737,
+        -0.026064
+      ],
+      "rotationBits": [
+        "0xbd8854f5",
+        "0xbae3b9cb",
+        "0xbcd58460"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 301,
+      "actor": "CoopArrivalPointEnemyTower1",
+      "layer": "Low",
+      "hash": "0x5ecca80458456454",
+      "position": [
+        6.877937,
+        -0.32679,
+        -48.441673
+      ],
+      "positionBits": [
+        "0x40dc1810",
+        "0xbea75107",
+        "0xc241c446"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        0.001448,
+        0.02172
+      ],
+      "rotationBits": [
+        "0xbd8854f3",
+        "0x3abdc741",
+        "0x3cb1ee5c"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 302,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "Low",
+      "hash": "0xf15980521b7c00da",
+      "position": [
+        -22.959457,
+        -0.011369,
+        -54.131428
+      ],
+      "positionBits": [
+        "0xc1b7acf8",
+        "0xbc3a46b2",
+        "0xc2588695"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        -0.001737,
+        -0.026064
+      ],
+      "rotationBits": [
+        "0xbd8854f5",
+        "0xbae3b9d1",
+        "0xbcd58460"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 303,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "Low",
+      "hash": "0x4f9c01696b944a46",
+      "position": [
+        -17.736387,
+        0.076584,
+        -50.761711
+      ],
+      "positionBits": [
+        "0xc18de41f",
+        "0x3d9cd850",
+        "0xc24b0bfe"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        -0.001737,
+        -0.026064
+      ],
+      "rotationBits": [
+        "0xbd8854f0",
+        "0xbae3b9d5",
+        "0xbcd58463"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 304,
+      "actor": "CoopArrivalPointEnemyTower1",
+      "layer": "Low",
+      "hash": "0x65477cb06676a8a2",
+      "position": [
+        13.383253,
+        -0.077371,
+        -46.829971
+      ],
+      "positionBits": [
+        "0x415621ce",
+        "0xbd9e74c0",
+        "0xc23b51e4"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        0.001448,
+        0.02172
+      ],
+      "rotationBits": [
+        "0xbd8854e9",
+        "0x3abdc743",
+        "0x3cb1ee5e"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 305,
+      "actor": "CoopArrivalPointEnemyTower2",
+      "layer": "Low",
+      "hash": "0x03464d726c9c7717",
+      "position": [
+        -23.799984,
+        0.30071,
+        -49.781876
+      ],
+      "positionBits": [
+        "0xc1be665e",
+        "0x3e99f69e",
+        "0xc24720a4"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        -0.001737,
+        -0.026064
+      ],
+      "rotationBits": [
+        "0xbd8854e8",
+        "0xbae3a48a",
+        "0xbcd5846b"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 306,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "Low",
+      "hash": "0x063f06e33ad9d5d9",
+      "position": [
+        -14.025229,
+        -0.128654,
+        -51.480198
+      ],
+      "positionBits": [
+        "0xc1606756",
+        "0xbe03bde8",
+        "0xc24debb9"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        -0.001737,
+        -0.026064
+      ],
+      "rotationBits": [
+        "0xbd8854f0",
+        "0xbae3b9cd",
+        "0xbcd58463"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 307,
+      "actor": "CoopArrivalPointEnemyTower1",
+      "layer": "Low",
+      "hash": "0xe9144982f5fc562a",
+      "position": [
+        19.019787,
+        0.076715,
+        -46.363636
+      ],
+      "positionBits": [
+        "0x41982886",
+        "0x3d9d1c86",
+        "0xc239745d"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        0.001448,
+        0.02172
+      ],
+      "rotationBits": [
+        "0xbd8854e9",
+        "0x3abdc741",
+        "0x3cb1ee5e"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 308,
+      "actor": "CoopArrivalPointEnemyTower0",
+      "layer": "Low",
+      "hash": "0xba9079a4812b3d81",
+      "position": [
+        16.404636,
+        -0.126248,
+        -48.551609
+      ],
+      "positionBits": [
+        "0x41833cb2",
+        "0xbe014718",
+        "0xc24234d9"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        0.001448,
+        0.02172
+      ],
+      "rotationBits": [
+        "0xbd8854e9",
+        "0x3abdc74a",
+        "0x3cb1ee5d"
+      ],
+      "kind": "towerArrival",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 309,
+      "actor": "CoopSakeArtilleryGunPoint2",
+      "layer": "Low",
+      "hash": "0x2944c04b1307e1e7",
+      "position": [
+        -20.600471,
+        0.694266,
+        -42.699238
+      ],
+      "positionBits": [
+        "0xc1a4cdc4",
+        "0x3f31bb67",
+        "0xc22acc05"
+      ],
+      "rotationRaw": [
+        -0.067403,
+        0.157397,
+        -0.036761
+      ],
+      "rotationBits": [
+        "0xbd8a0a53",
+        "0x3e212ccb",
+        "0xbd16926a"
+      ],
+      "kind": "artilleryGun",
+      "directionGroup": 2
+    },
+    {
+      "actorIndex": 310,
+      "actor": "CoopSakeArtilleryGunPoint1",
+      "layer": "Low",
+      "hash": "0xd7ef4ae00e82477d",
+      "position": [
+        16.959768,
+        0.522245,
+        -39.008198
+      ],
+      "positionBits": [
+        "0x4187ad9b",
+        "0x3f05b1d5",
+        "0xc21c0865"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        0.001448,
+        0.02172
+      ],
+      "rotationBits": [
+        "0xbd8854f4",
+        "0x3abdc72f",
+        "0x3cb1ee4b"
+      ],
+      "kind": "artilleryGun",
+      "directionGroup": 1
+    },
+    {
+      "actorIndex": 311,
+      "actor": "CoopSakeArtilleryGunPoint0",
+      "layer": "Low",
+      "hash": "0x2c626f7607bbc08d",
+      "position": [
+        12.1623,
+        0.276757,
+        -41.194782
+      ],
+      "positionBits": [
+        "0x414298c8",
+        "0x3e8db30d",
+        "0xc224c775"
+      ],
+      "rotationRaw": [
+        -0.066568,
+        0.001448,
+        0.02172
+      ],
+      "rotationBits": [
+        "0xbd8854eb",
+        "0x3abdc74f",
+        "0x3cb1ee64"
+      ],
+      "kind": "artilleryGun",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 312,
+      "actor": "CoopSakeArtilleryGunPoint0",
+      "layer": "Low",
+      "hash": "0x93b073184213e3c5",
+      "position": [
+        -16.050711,
+        0.454601,
+        -44.431515
+      ],
+      "positionBits": [
+        "0xc18067db",
+        "0x3ee8c176",
+        "0xc231b9df"
+      ],
+      "rotationRaw": [
+        -0.067912,
+        0.199136,
+        -0.039634
+      ],
+      "rotationBits": [
+        "0xbd8b15a3",
+        "0x3e4bea48",
+        "0xbd2257b3"
+      ],
+      "kind": "artilleryGun",
+      "directionGroup": 0
+    },
+    {
+      "actorIndex": 411,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0xc6234b64c3bd518a",
+      "position": [
+        -20.623859,
+        13.5,
+        74.062508
+      ],
+      "positionBits": [
+        "0xc1a4fdaa",
+        "0x41580000",
+        "0x42942001"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": []
+    },
+    {
+      "actorIndex": 412,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0x47919fac62c0c44c",
+      "position": [
+        20.02247,
+        2.95685,
+        -5.574951
+      ],
+      "positionBits": [
+        "0x41a02e05",
+        "0x403d3d08",
+        "0xc0b26600"
+      ],
+      "rotationRaw": [
+        0.0,
+        -0.227085,
+        0.021817
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0xbe6888de",
+        "0x3cb2b8c7"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        419
+      ]
+    },
+    {
+      "actorIndex": 413,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0xc737f9bc17c0a20a",
+      "position": [
+        4.095882,
+        2.609331,
+        -20.172848
+      ],
+      "positionBits": [
+        "0x40831177",
+        "0x4026ff46",
+        "0xc1a161fe"
+      ],
+      "rotationRaw": [
+        0.0,
+        -0.0,
+        0.021817
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0x80000000",
+        "0x3cb2b8cf"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        412
+      ]
+    },
+    {
+      "actorIndex": 414,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0xfb081fc9686151fd",
+      "position": [
+        -10.154118,
+        3.663447,
+        -24.422848
+      ],
+      "positionBits": [
+        "0xc1227744",
+        "0x406a75ec",
+        "0xc1c361fe"
+      ],
+      "rotationRaw": [
+        0.0,
+        -0.0,
+        -0.02618
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0x80000000",
+        "0xbcd67758"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        423,
+        421,
+        413
+      ]
+    },
+    {
+      "actorIndex": 415,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0x17fb83a95e32952e",
+      "position": [
+        -12.761923,
+        4.831854,
+        5.527145
+      ],
+      "positionBits": [
+        "0xc14c30d6",
+        "0x409a9e8d",
+        "0x40b0de60"
+      ],
+      "rotationRaw": [
+        -0.166921,
+        -0.003053,
+        -0.025665
+      ],
+      "rotationBits": [
+        "0xbe2aed39",
+        "0xbb4818e6",
+        "0xbcd24069"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        419,
+        426
+      ]
+    },
+    {
+      "actorIndex": 416,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0x6594736d28f92b27",
+      "position": [
+        34.441151,
+        6.0,
+        33.510056
+      ],
+      "positionBits": [
+        "0x4209c3bd",
+        "0x40c00000",
+        "0x42060a4c"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": []
+    },
+    {
+      "actorIndex": 417,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0x693160c438c5f374",
+      "position": [
+        -1.265555,
+        12.0,
+        62.140739
+      ],
+      "positionBits": [
+        "0xbfa1fdb8",
+        "0x41400000",
+        "0x4278901e"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        411,
+        422
+      ]
+    },
+    {
+      "actorIndex": 418,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0x917001177196a130",
+      "position": [
+        20.619942,
+        13.0,
+        63.644646
+      ],
+      "positionBits": [
+        "0x41a4f5a4",
+        "0x41500000",
+        "0x427e941e"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        417,
+        424
+      ]
+    },
+    {
+      "actorIndex": 419,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0x47030bad25d7d7b5",
+      "position": [
+        8.764103,
+        4.432256,
+        8.856049
+      ],
+      "positionBits": [
+        "0x410c39c4",
+        "0x408dd50a",
+        "0x410db260"
+      ],
+      "rotationRaw": [
+        -0.145164,
+        -2.6e-05,
+        4e-06
+      ],
+      "rotationBits": [
+        "0xbe14a600",
+        "0xb7d5fef4",
+        "0x367a46fe"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        425
+      ]
+    },
+    {
+      "actorIndex": 420,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0xcff78cd6bcbc20c3",
+      "position": [
+        1.849957,
+        1.66011,
+        -39.852859
+      ],
+      "positionBits": [
+        "0x3feccb61",
+        "0x3fd47e7c",
+        "0xc21f6954"
+      ],
+      "rotationRaw": [
+        0.0,
+        0.001454,
+        0.021817
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0x3abe9f21",
+        "0x3cb2b8be"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        413,
+        414
+      ]
+    },
+    {
+      "actorIndex": 421,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0x6c86bd8bab5526e4",
+      "position": [
+        -22.85655,
+        4.041898,
+        -12.17392
+      ],
+      "positionBits": [
+        "0xc1b6da37",
+        "0x4081573a",
+        "0xc142c860"
+      ],
+      "rotationRaw": [
+        0.0,
+        -0.0,
+        -0.02618
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0x80000000",
+        "0xbcd67745"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        415
+      ]
+    },
+    {
+      "actorIndex": 422,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0xcc18bd32cda75f9a",
+      "position": [
+        -24.490921,
+        10.0,
+        38.185059
+      ],
+      "positionBits": [
+        "0xc1c3ed68",
+        "0x41200000",
+        "0x4218bd80"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        427
+      ]
+    },
+    {
+      "actorIndex": 423,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0xad571523357a72d4",
+      "position": [
+        -6.30308,
+        1.261815,
+        -50.749794
+      ],
+      "positionBits": [
+        "0xc0c9b2d4",
+        "0x3fa18328",
+        "0xc24affca"
+      ],
+      "rotationRaw": [
+        0.0,
+        0.001325,
+        -0.02618
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0x3aada92a",
+        "0xbcd67785"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        420
+      ]
+    },
+    {
+      "actorIndex": 424,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0x158028a7243acc0f",
+      "position": [
+        16.708881,
+        7.5,
+        43.439602
+      ],
+      "positionBits": [
+        "0x4185abca",
+        "0x40f00000",
+        "0x422dc227"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        416
+      ]
+    },
+    {
+      "actorIndex": 425,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0xfe28259304fa0f2d",
+      "position": [
+        3.009079,
+        8.0,
+        25.435059
+      ],
+      "positionBits": [
+        "0x404094c0",
+        "0x41000000",
+        "0x41cb7b00"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        426,
+        424
+      ]
+    },
+    {
+      "actorIndex": 426,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0x4ae153158613846f",
+      "position": [
+        -7.490921,
+        9.0,
+        27.685059
+      ],
+      "positionBits": [
+        "0xc0efb5a0",
+        "0x41100000",
+        "0x41dd7b00"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": [
+        422
+      ]
+    },
+    {
+      "actorIndex": 427,
+      "actor": "CoopSakerocketJumpPoint",
+      "layer": "Low",
+      "hash": "0x1642e6f1bd861f88",
+      "position": [
+        -40.101372,
+        6.0,
+        29.185387
+      ],
+      "positionBits": [
+        "0xc22067ce",
+        "0x40c00000",
+        "0x41e97bac"
+      ],
+      "kind": "jumpRoute",
+      "linkedActorIndices": []
+    }
+  ]
+}

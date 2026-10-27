@@ -1,0 +1,967 @@
+{
+  "schemaVersion": 1,
+  "gameVersion": "11.3.0",
+  "kind": "owned_romfs_salmon_stage_catalog",
+  "tideLayerMapping": {
+    "Low": {
+      "tideIndex": 0,
+      "uiLabel": "Low"
+    },
+    "Mid": {
+      "tideIndex": 1,
+      "uiLabel": "Normal"
+    },
+    "High": {
+      "tideIndex": 2,
+      "uiLabel": "High"
+    }
+  },
+  "stages": [
+    {
+      "stageId": "Cop_Carousel",
+      "markersUrl": "/maps/cop-carousel-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-carousel-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-carousel.glb",
+      "modelStageId": "Cop_Carousel",
+      "counts": {
+        "markers": 38,
+        "positionlessActors": 0,
+        "enemyAnchors": 78,
+        "jumpLinks": 59,
+        "enemyAnchorKinds": {
+          "towerArrival": 28,
+          "jumpRoute": 44,
+          "artilleryGun": 6
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 296,
+          "y": 4.5,
+          "yBits": "0x40900000"
+        },
+        "Mid": {
+          "actorIndex": 179,
+          "y": 10.1,
+          "yBits": "0x4121999a"
+        },
+        "High": {
+          "actorIndex": 116,
+          "y": 11,
+          "yBits": "0x41300000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 0,
+        "actor": "Fld_BigRunCarousel03",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_BigRunCarousel03",
+        "modelInfoSubModels": [
+          "FldBG_BigRunCarousel03"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Carousel.pack.zs",
+          "sha256": "b87ef54d16d2c3890618d3c3e4c08b19146f994c0d9e6fb24bd52d2a1b23e6f6"
+        },
+        "bancEntry": "Banc/Cop_Carousel.bcett.byml",
+        "bancSha256": "ccc45e4238625421dffc5e5a215c25b674c494459fa842a626ef359035c11f6f",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_BigRunCarousel03.pack.zs",
+          "sha256": "f07e2ad66391832d2f3e4e889bf4d43cba615ff954bfe816e23722c082eb523a"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_BigRunCarousel03.bfres.zs",
+          "sha256": "f02c1ca4e46adda07b021ac82ea69a9265a41ce68ed52a78dfb71fd3008a3005"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_District00",
+      "markersUrl": "/maps/cop-district00-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-district00-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-district00.glb",
+      "modelStageId": "Cop_District00",
+      "counts": {
+        "markers": 32,
+        "positionlessActors": 0,
+        "enemyAnchors": 122,
+        "jumpLinks": 131,
+        "enemyAnchorKinds": {
+          "towerArrival": 30,
+          "jumpRoute": 86,
+          "artilleryGun": 6
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 425,
+          "y": -10,
+          "yBits": "0xc1200000"
+        },
+        "Mid": {
+          "actorIndex": 292,
+          "y": -9.5,
+          "yBits": "0xc1180000"
+        },
+        "High": {
+          "actorIndex": 174,
+          "y": -9,
+          "yBits": "0xc1100000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 13,
+        "actor": "Fld_BigRunDistrict00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_BigRunDistrict00",
+        "modelInfoSubModels": [
+          "FldBG_BigRunDistrict00"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_District00.pack.zs",
+          "sha256": "47144419677669480f94eb14ce1fac361b8da9cb90258c1d8d2356c7e92ed424"
+        },
+        "bancEntry": "Banc/Cop_District00.bcett.byml",
+        "bancSha256": "e9c9222571562bef0e6ae7356bec865db37faa0defb6f2804bfae1090167c273",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_BigRunDistrict00.pack.zs",
+          "sha256": "773d1a9ec97ee011bea966ab88805c49781c4475f9dd980fed19a19598e42c5f"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_BigRunDistrict00.bfres.zs",
+          "sha256": "f6447e99434a21c935a09516dcf2161e78da974f4ad1b84be70005b66dfd73ee"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Factory",
+      "markersUrl": "/maps/cop-factory-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-factory-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-factory.glb",
+      "modelStageId": "Cop_Factory",
+      "counts": {
+        "markers": 31,
+        "positionlessActors": 0,
+        "enemyAnchors": 103,
+        "jumpLinks": 106,
+        "enemyAnchorKinds": {
+          "towerArrival": 27,
+          "jumpRoute": 70,
+          "artilleryGun": 6
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 334,
+          "y": 2,
+          "yBits": "0x40000000"
+        },
+        "Mid": {
+          "actorIndex": 227,
+          "y": 5.25,
+          "yBits": "0x40a80000"
+        },
+        "High": {
+          "actorIndex": 133,
+          "y": 7,
+          "yBits": "0x40e00000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 30,
+        "actor": "Fld_BigRunFactory00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_BigRunFactory00",
+        "modelInfoSubModels": [
+          "FldBG_BigRunFactory00"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Factory.pack.zs",
+          "sha256": "be00fadfd9c3af7693a3312cb41dfc0bae98cb51a0cb0f406c47e41ccd79e225"
+        },
+        "bancEntry": "Banc/Cop_Factory.bcett.byml",
+        "bancSha256": "8c2aa96ac617087c0550d212b32ccd341bada0f4f83c6774edaa8034502db604",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_BigRunFactory00.pack.zs",
+          "sha256": "9952f07aa2cc9bdc6c1ef427536e186492452d3e71e4b07dfd015b0c0dbb0364"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_BigRunFactory00.bfres.zs",
+          "sha256": "b21297009c80fc7aa8902bfd492e691afe6de203c6fa31814142dfabb82a6f63"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Manbou00",
+      "markersUrl": "/maps/cop-manbou00-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-manbou00-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-manbou00.glb",
+      "modelStageId": "Cop_Manbou00",
+      "counts": {
+        "markers": 30,
+        "positionlessActors": 1,
+        "enemyAnchors": 84,
+        "jumpLinks": 74,
+        "enemyAnchorKinds": {
+          "towerArrival": 28,
+          "jumpRoute": 50,
+          "artilleryGun": 6
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 443,
+          "y": null,
+          "yBits": null
+        },
+        "Mid": {
+          "actorIndex": 315,
+          "y": 5.75,
+          "yBits": "0x40b80000"
+        },
+        "High": {
+          "actorIndex": 182,
+          "y": 6.5,
+          "yBits": "0x40d00000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 7,
+        "actor": "Fld_BigRunManbou00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_BigRunManbou00",
+        "modelInfoSubModels": [
+          "FldBG_BigRunManbou00Celling",
+          "FldBG_Manbou00Ground",
+          "FldBG_BigRunManbou00"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Manbou00.pack.zs",
+          "sha256": "ff00e19d62bf337197e1dc73558f043edb9babd0272ed52a805df631f4180cca"
+        },
+        "bancEntry": "Banc/Cop_Manbou00.bcett.byml",
+        "bancSha256": "8c798b18b330efa2eaec95aca785911193d1c12afae2cbe2039c6f5261858363",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_BigRunManbou00.pack.zs",
+          "sha256": "d7e2bbb00f72316709b0278d0e9eee47ef7232ab06d6e00192fb67a0f811409f"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_BigRunManbou00.bfres.zs",
+          "sha256": "158524cfd718f2621b85c28baec0e3e1c8fe352d0313b47d90a64cfdf2fd21b1"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Section",
+      "markersUrl": "/maps/cop-section-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-section-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-section.glb",
+      "modelStageId": "Cop_Section",
+      "counts": {
+        "markers": 29,
+        "positionlessActors": 0,
+        "enemyAnchors": 87,
+        "jumpLinks": 81,
+        "enemyAnchorKinds": {
+          "towerArrival": 28,
+          "jumpRoute": 53,
+          "artilleryGun": 6
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 488,
+          "y": -1,
+          "yBits": "0xbf800000"
+        },
+        "Mid": {
+          "actorIndex": 378,
+          "y": 2.25,
+          "yBits": "0x40100000"
+        },
+        "High": {
+          "actorIndex": 356,
+          "y": 4,
+          "yBits": "0x40800000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 3,
+        "actor": "Fld_BigRunSection00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_BigRunSection00",
+        "modelInfoSubModels": [
+          "FldBG_BigRunSection00",
+          "FldBG_BigRunSection00Logo",
+          "FldBG_BigRunSection00PlanterSet",
+          "FldBG_BigRunSection00MobShop"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Section.pack.zs",
+          "sha256": "1ab2f2313458cdfe645deefb4b049787497228acf1da992e379c945d08d37447"
+        },
+        "bancEntry": "Banc/Cop_Section.bcett.byml",
+        "bancSha256": "85a6d8575ed43b6f40a3b9fc26bb96bd947364bfb96d012fe780b3e7ae9a2be9",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_BigRunSection00.pack.zs",
+          "sha256": "7bfc19eaa01a7b715c7106dc63889e519a4328e9c1ce8a019f4cbe0dbfd3139b"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_BigRunSection00.bfres.zs",
+          "sha256": "3f7b0fe87425b69aa6c8ef2ded8c8da136dbe46ef82236d57f9b6ebfa5544709"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Shakedent",
+      "markersUrl": "/maps/cop-shakedent-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-shakedent-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-shakedent.glb",
+      "modelStageId": "Cop_Shakedent",
+      "counts": {
+        "markers": 39,
+        "positionlessActors": 0,
+        "enemyAnchors": 76,
+        "jumpLinks": 57,
+        "enemyAnchorKinds": {
+          "jumpRoute": 35,
+          "geyser": 8,
+          "towerArrival": 27,
+          "artilleryGun": 6
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 298,
+          "y": -1,
+          "yBits": "0xbf800000"
+        },
+        "Mid": {
+          "actorIndex": 146,
+          "y": 3.75,
+          "yBits": "0x40700000"
+        },
+        "High": {
+          "actorIndex": 49,
+          "y": 7,
+          "yBits": "0x40e00000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 9,
+        "actor": "Fld_Shakedent00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_Shakedent00",
+        "modelInfoSubModels": [
+          "FldBG_Shakedent00"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Shakedent.pack.zs",
+          "sha256": "638af73f3da4b39f7f5e5c41abb8093551f0f3d58b9a0bfa4285952fd6700500"
+        },
+        "bancEntry": "Banc/Cop_Shakedent.bcett.byml",
+        "bancSha256": "bcdeb6a54428b1a72ae7dbc79168e5927c06e9ee1babedf1d415081b0598f4b8",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_Shakedent00.pack.zs",
+          "sha256": "46cec5ea312d8e2bf8d0afe22259cbfd3b4a3bf301557cd481abbac811a747b8"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_Shakedent00.bfres.zs",
+          "sha256": "bcd6de03d598b450cd8adaf0c9cfa725b84bb110793e244c4c9536f0c3602334"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Shakehighway",
+      "markersUrl": "/maps/cop-shakehighway-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-shakehighway-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-shakehighway.glb",
+      "modelStageId": "Cop_Shakehighway",
+      "counts": {
+        "markers": 52,
+        "positionlessActors": 0,
+        "enemyAnchors": 82,
+        "jumpLinks": 43,
+        "enemyAnchorKinds": {
+          "geyser": 8,
+          "jumpRoute": 31,
+          "towerArrival": 35,
+          "artilleryGun": 8
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 273,
+          "y": -0.5,
+          "yBits": "0xbf000000"
+        },
+        "Mid": {
+          "actorIndex": 134,
+          "y": 5.25,
+          "yBits": "0x40a80000"
+        },
+        "High": {
+          "actorIndex": 64,
+          "y": 9.5,
+          "yBits": "0x41180000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 14,
+        "actor": "Fld_Shakehighway00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_Shakehighway00",
+        "modelInfoSubModels": [
+          "FldBG_Cop_Shakehighway00"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Shakehighway.pack.zs",
+          "sha256": "5b43740676c0fbfcef3b34ebadc9c4698171c8b14b3e6ebf3a2587901b75ec8c"
+        },
+        "bancEntry": "Banc/Cop_Shakehighway.bcett.byml",
+        "bancSha256": "4d0ad8d891d31bdcfae83674dbaf3b9042d78180a4dfc93042964220aedce01c",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_Shakehighway00.pack.zs",
+          "sha256": "a717b77aeaa280baabce2ffeca65e05eaa81de74aa06a6a34573bfb0dc6c20ba"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_Shakehighway00.bfres.zs",
+          "sha256": "3f7451d87909737280c01ab13995700312df97beb93579623c887a4190a2c513"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Shakelift",
+      "markersUrl": "/maps/cop-shakelift-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-shakelift-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-shakelift.glb",
+      "modelStageId": "Cop_Shakelift",
+      "counts": {
+        "markers": 48,
+        "positionlessActors": 0,
+        "enemyAnchors": 95,
+        "jumpLinks": 65,
+        "enemyAnchorKinds": {
+          "jumpRoute": 51,
+          "towerArrival": 29,
+          "geyser": 7,
+          "artilleryGun": 8
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 382,
+          "y": 4,
+          "yBits": "0x40800000"
+        },
+        "Mid": {
+          "actorIndex": 257,
+          "y": 8,
+          "yBits": "0x41000000"
+        },
+        "High": {
+          "actorIndex": 98,
+          "y": 12,
+          "yBits": "0x41400000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 2,
+        "actor": "Fld_Shakelift00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_Shakelift00",
+        "modelInfoSubModels": [
+          "FldBG_Shakelift00"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Shakelift.pack.zs",
+          "sha256": "8ea1379bd254d1546466fb9337902dd28417765da60818df43b28d6368f6847d"
+        },
+        "bancEntry": "Banc/Cop_Shakelift.bcett.byml",
+        "bancSha256": "3d8628adb47f5a3be9e69a547c56c4b489a695d75d4bdcd88cee5f695ddb3dea",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_Shakelift00.pack.zs",
+          "sha256": "223a4fcf24239c02dec0f6b570052d6384978e0d6f7452cf3071e84b7494efa4"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_Shakelift00.bfres.zs",
+          "sha256": "c6c2f2ebe6b0a431e17ff4b21cd69e1d9f559afc207f9d7c2b75805fef291984"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Shakerail",
+      "markersUrl": "/maps/cop-shakerail-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-shakerail-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-shakerail.glb",
+      "modelStageId": "Cop_Shakerail",
+      "counts": {
+        "markers": 46,
+        "positionlessActors": 0,
+        "enemyAnchors": 77,
+        "jumpLinks": 42,
+        "enemyAnchorKinds": {
+          "jumpRoute": 34,
+          "towerArrival": 28,
+          "geyser": 9,
+          "artilleryGun": 6
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 363,
+          "y": -2.5,
+          "yBits": "0xc0200000"
+        },
+        "Mid": {
+          "actorIndex": 196,
+          "y": 3.5,
+          "yBits": "0x40600000"
+        },
+        "High": {
+          "actorIndex": 70,
+          "y": 7,
+          "yBits": "0x40e00000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 4,
+        "actor": "Fld_Shakerail00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_Shakerail00",
+        "modelInfoSubModels": [
+          "FldBG_Shakerail00RockyMountain",
+          "FldBG_ShakerailMiddleDV"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Shakerail.pack.zs",
+          "sha256": "c58216e202173387ddbb6f9a9a528188e866ef3dac15cc02baa55fa1b814b590"
+        },
+        "bancEntry": "Banc/Cop_Shakerail.bcett.byml",
+        "bancSha256": "f9bdc0d3301e2940831e1ba3d63377b1952d77cbe7b74cf7f3b56c034d494a03",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_Shakerail00.pack.zs",
+          "sha256": "31cbaf6b99e5aea0c826b3c66625ab8e0a85e5df15a363bfd5aeadb2dbd5ed50"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_Shakerail00.bfres.zs",
+          "sha256": "63f7d765b272073c296c1dffa68f40131a737ebaa199424a9fabeae26f398298"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Shakeship",
+      "markersUrl": "/maps/cop-shakeship-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-shakeship-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-shakeship.glb",
+      "modelStageId": "Cop_Shakeship",
+      "counts": {
+        "markers": 47,
+        "positionlessActors": 0,
+        "enemyAnchors": 107,
+        "jumpLinks": 90,
+        "enemyAnchorKinds": {
+          "towerArrival": 31,
+          "geyser": 8,
+          "jumpRoute": 62,
+          "artilleryGun": 6
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 444,
+          "y": 6.5,
+          "yBits": "0x40d00000"
+        },
+        "Mid": {
+          "actorIndex": 162,
+          "y": 9,
+          "yBits": "0x41100000"
+        },
+        "High": {
+          "actorIndex": 85,
+          "y": 12.5,
+          "yBits": "0x41480000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 2,
+        "actor": "Fld_Shakeship00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_Shakeship00",
+        "modelInfoSubModels": [
+          "FldBG_Shakeship00",
+          "FldSub_Shakeship00Smoke",
+          "FldSub_Shakeship00Flag",
+          "FldSub_Shakeship00CraneHead"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Shakeship.pack.zs",
+          "sha256": "69a0a7d0d442ad01ef5f766fec6e104e34b46c19a6bcc8833912835804c0bb8f"
+        },
+        "bancEntry": "Banc/Cop_Shakeship.bcett.byml",
+        "bancSha256": "ecde3c8cc2b602cdf4f1b9f1e8a21ed246ef9346f23f3b56bc71b09e38520701",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_Shakeship00.pack.zs",
+          "sha256": "0a3dd59f04e66935655e7b187ed955755930dd83bb366f7a012f65677e373e64"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_Shakeship00.bfres.zs",
+          "sha256": "60e372ce5f91a220e8dd9aac36412ec469cb19b586fcc16797ac3d03d74db503"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Shakespiral",
+      "markersUrl": "/maps/cop-shakespiral-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-shakespiral-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-shakespiral.glb",
+      "modelStageId": "Cop_Shakespiral",
+      "counts": {
+        "markers": 43,
+        "positionlessActors": 0,
+        "enemyAnchors": 68,
+        "jumpLinks": 45,
+        "enemyAnchorKinds": {
+          "towerArrival": 28,
+          "jumpRoute": 26,
+          "geyser": 7,
+          "artilleryGun": 7
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 269,
+          "y": 1,
+          "yBits": "0x3f800000"
+        },
+        "Mid": {
+          "actorIndex": 166,
+          "y": 5.8,
+          "yBits": "0x40b9999a"
+        },
+        "High": {
+          "actorIndex": 69,
+          "y": 11.95,
+          "yBits": "0x413f3333"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 10,
+        "actor": "Fld_Shakespiral00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_Shakespiral00",
+        "modelInfoSubModels": [
+          "FldBG_Shakespiral00",
+          "FldSub_Shakespiral00FortressHouse",
+          "FldSub_Shakespiral00FriedFish",
+          "FldSub_Shakespiral00Weathercock",
+          "FldSub_Shakespiral00Gondola"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Shakespiral.pack.zs",
+          "sha256": "279223255811bc0670678997197e134e0258b93fa4a5898250c1e7507b1afe9b"
+        },
+        "bancEntry": "Banc/Cop_Shakespiral.bcett.byml",
+        "bancSha256": "0b9b1b45c53f43b504060d0a154ba1dd96a305c98102467f2bc645a15df8ee0c",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_Shakespiral00.pack.zs",
+          "sha256": "9d9642803659306b0035461d81ee0c607dbd838ba7552a0af358d31652ddca34"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_Shakespiral00.bfres.zs",
+          "sha256": "a70fc8328de59e9399284ba9114f0832c16c565fea30cfb668bdbe089340209b"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Shakeup",
+      "markersUrl": "/maps/cop-shakeup-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-shakeup-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-shakeup.glb",
+      "modelStageId": "Cop_Shakeup",
+      "counts": {
+        "markers": 51,
+        "positionlessActors": 0,
+        "enemyAnchors": 80,
+        "jumpLinks": 57,
+        "enemyAnchorKinds": {
+          "towerArrival": 31,
+          "jumpRoute": 33,
+          "geyser": 9,
+          "artilleryGun": 7
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 379,
+          "y": 6.5,
+          "yBits": "0x40d00000"
+        },
+        "Mid": {
+          "actorIndex": 226,
+          "y": 9,
+          "yBits": "0x41100000"
+        },
+        "High": {
+          "actorIndex": 123,
+          "y": 15,
+          "yBits": "0x41700000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 0,
+        "actor": "Fld_Shakeup00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_Shakeup00",
+        "modelInfoSubModels": [
+          "FldBG_Shakeup00",
+          "Fld_Shakeup00_Flag"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Shakeup.pack.zs",
+          "sha256": "81a582b38be9e342fb19ffab71248d691b97e1e156b44245fe42ac7fb99e5346"
+        },
+        "bancEntry": "Banc/Cop_Shakeup.bcett.byml",
+        "bancSha256": "a8c8c6d73d23f6717515ae4d1f8e4edf2b3cd732c3c13b7eb0d1430c89877f0d",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_Shakeup00.pack.zs",
+          "sha256": "0c2a20228678e052194790c39dd34fe8a3f2b3e100c461a42ce12e3563eabc80"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_Shakeup00.bfres.zs",
+          "sha256": "ff4500c853d18fa306c1b66d9c9c8631aedabae7ac54af13e8d49f9a84611930"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Temple",
+      "markersUrl": "/maps/cop-temple-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-temple-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-temple.glb",
+      "modelStageId": "Cop_Temple",
+      "counts": {
+        "markers": 40,
+        "positionlessActors": 0,
+        "enemyAnchors": 79,
+        "jumpLinks": 66,
+        "enemyAnchorKinds": {
+          "jumpRoute": 45,
+          "towerArrival": 28,
+          "artilleryGun": 6
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 362,
+          "y": 0.95,
+          "yBits": "0x3f733333"
+        },
+        "Mid": {
+          "actorIndex": 271,
+          "y": 2.5,
+          "yBits": "0x40200000"
+        },
+        "High": {
+          "actorIndex": 171,
+          "y": 5.5,
+          "yBits": "0x40b00000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 0,
+        "actor": "Fld_BigRunTemple00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_BigRunTemple00",
+        "modelInfoSubModels": [
+          "FldBG_BigRunTemple00",
+          "Fld_BigRunTemple00_Canola"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Temple.pack.zs",
+          "sha256": "ad567d5e4ac15371b8c2affb509d7dbde035ded3457fd679d5ed9c0b45503cfd"
+        },
+        "bancEntry": "Banc/Cop_Temple.bcett.byml",
+        "bancSha256": "6c301b4b55842be4291b18c74ee3c4f991643130d06ed28792f399bd82c6edbb",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_BigRunTemple00.pack.zs",
+          "sha256": "b46e4ae5e8434af52a37bcd0365115469f5b0713fdf2b83a0973fb3aa38772f0"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_BigRunTemple00.bfres.zs",
+          "sha256": "d00960ddb5be5a8ac0d0990c53beab6664e7d7b6e6a9354765c71818f83e95e7"
+        }
+      }
+    },
+    {
+      "stageId": "Cop_Tutorial",
+      "markersUrl": "/maps/cop-tutorial-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-tutorial-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-shakespiral.glb",
+      "modelStageId": "Cop_Shakespiral",
+      "counts": {
+        "markers": 43,
+        "positionlessActors": 0,
+        "enemyAnchors": 68,
+        "jumpLinks": 45,
+        "enemyAnchorKinds": {
+          "towerArrival": 28,
+          "jumpRoute": 26,
+          "geyser": 7,
+          "artilleryGun": 7
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 269,
+          "y": 1,
+          "yBits": "0x3f800000"
+        },
+        "Mid": {
+          "actorIndex": 166,
+          "y": 5.8,
+          "yBits": "0x40b9999a"
+        },
+        "High": {
+          "actorIndex": 69,
+          "y": 11.95,
+          "yBits": "0x413f3333"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 10,
+        "actor": "Fld_Shakespiral00",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_Shakespiral00",
+        "modelInfoSubModels": [
+          "FldBG_Shakespiral00",
+          "FldSub_Shakespiral00FortressHouse",
+          "FldSub_Shakespiral00FriedFish",
+          "FldSub_Shakespiral00Weathercock",
+          "FldSub_Shakespiral00Gondola"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Tutorial.pack.zs",
+          "sha256": "66e9d5cc8fd0dd2c94ccfcd7d2b391f18217343ef0e3aee7f9b0ad5463a03bd5"
+        },
+        "bancEntry": "Banc/Cop_Shakespiral.bcett.byml",
+        "bancSha256": "0b9b1b45c53f43b504060d0a154ba1dd96a305c98102467f2bc645a15df8ee0c",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_Shakespiral00.pack.zs",
+          "sha256": "9d9642803659306b0035461d81ee0c607dbd838ba7552a0af358d31652ddca34"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_Shakespiral00.bfres.zs",
+          "sha256": "a70fc8328de59e9399284ba9114f0832c16c565fea30cfb668bdbe089340209b"
+        }
+      },
+      "aliasOf": "Cop_Shakespiral"
+    },
+    {
+      "stageId": "Cop_Upland",
+      "markersUrl": "/maps/cop-upland-markers.json",
+      "enemyAnchorsUrl": "/maps/cop-upland-enemy-anchors.json",
+      "modelUrl": "/maps/local/cop-upland.glb",
+      "modelStageId": "Cop_Upland",
+      "counts": {
+        "markers": 35,
+        "positionlessActors": 0,
+        "enemyAnchors": 81,
+        "jumpLinks": 61,
+        "enemyAnchorKinds": {
+          "jumpRoute": 48,
+          "towerArrival": 27,
+          "artilleryGun": 6
+        }
+      },
+      "waterLevelLocators": {
+        "Low": {
+          "actorIndex": 362,
+          "y": 0.5,
+          "yBits": "0x3f000000"
+        },
+        "Mid": {
+          "actorIndex": 238,
+          "y": 3,
+          "yBits": "0x40400000"
+        },
+        "High": {
+          "actorIndex": 135,
+          "y": 9,
+          "yBits": "0x41100000"
+        }
+      },
+      "fieldActor": {
+        "actorIndex": 1,
+        "actor": "Fld_BigRunUpland03",
+        "layer": "Cmn",
+        "transformFields": "omitted",
+        "modelInfoMain": "Fld_BigRunUpland03",
+        "modelInfoSubModels": [
+          "FldBG_BigRunUpland03",
+          "FldObj_BigRunUpland03_Tree"
+        ]
+      },
+      "source": {
+        "scenePack": {
+          "romfsPath": "Pack/Scene/Cop_Upland.pack.zs",
+          "sha256": "23c00fd2d9cbb3141cb8158264232742d238b43461baad511541d4e7ca81dca5"
+        },
+        "bancEntry": "Banc/Cop_Upland.bcett.byml",
+        "bancSha256": "8883f6e197cd34e682aafde289c30a9ae0dc28e38b7e0135b53388b05b6e8130",
+        "fieldActorPack": {
+          "romfsPath": "Pack/Actor/Fld_BigRunUpland03.pack.zs",
+          "sha256": "0f85ac51d0275b6c1f80b0e43000fb2dbfefe433cec79f8dc146b0541effd781"
+        },
+        "fieldModel": {
+          "romfsPath": "Model/Fld_BigRunUpland03.bfres.zs",
+          "sha256": "1ad6086b700530e1453ca75832b6a69404787fcba697a09bfd6b8cecc1008015"
+        }
+      }
+    }
+  ],
+  "tideLayerEvidence": "RomFS CoopWaterLevelLocator per-layer heights and owned 11.3.0 ELF Layer parser/spawn-key analysis; live WAVE tide must be observed separately",
+  "modelAssetPolicy": "local_optional"
+}

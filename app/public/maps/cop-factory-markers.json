@@ -1,0 +1,671 @@
+{
+  "schemaVersion": 1,
+  "stageId": "Cop_Factory",
+  "gameVersion": "11.3.0",
+  "kind": "static_banc_actor_markers",
+  "coordinateSystem": {
+    "components": [
+      "x",
+      "y",
+      "z"
+    ],
+    "displayUpAxis": "y",
+    "unit": "game_coordinate_unit_unverified",
+    "rotation": "raw_Banc_values_unverified"
+  },
+  "source": {
+    "scenePack": {
+      "romfsPath": "Pack/Scene/Cop_Factory.pack.zs",
+      "sha256": "be00fadfd9c3af7693a3312cb41dfc0bae98cb51a0cb0f406c47e41ccd79e225"
+    },
+    "bancEntry": "Banc/Cop_Factory.bcett.byml",
+    "bancSha256": "8c2aa96ac617087c0550d212b32ccd341bada0f4f83c6774edaa8034502db604",
+    "fieldActorPack": {
+      "romfsPath": "Pack/Actor/Fld_BigRunFactory00.pack.zs",
+      "sha256": "9952f07aa2cc9bdc6c1ef427536e186492452d3e71e4b07dfd015b0c0dbb0364"
+    },
+    "fieldModel": {
+      "romfsPath": "Model/Fld_BigRunFactory00.bfres.zs",
+      "sha256": "b21297009c80fc7aa8902bfd492e691afe6de203c6fa31814142dfabb82a6f63"
+    }
+  },
+  "positionlessActors": [],
+  "markers": [
+    {
+      "actorIndex": 0,
+      "actor": "CoopIkuraBank",
+      "layer": "Cmn",
+      "hash": "0x8267e3866eb5a77c",
+      "position": [
+        4.6,
+        11.0,
+        0.0
+      ],
+      "positionBits": [
+        "0x40933333",
+        "0x41300000",
+        "0x00000000"
+      ]
+    },
+    {
+      "actorIndex": 1,
+      "actor": "StartPos",
+      "layer": "Cmn",
+      "hash": "0xfd358d910c9a87d2",
+      "position": [
+        -1.748498,
+        10.45,
+        4.500074
+      ],
+      "positionBits": [
+        "0xbfdfcecc",
+        "0x41273333",
+        "0x4090009c"
+      ],
+      "rotationRaw": [
+        0.0,
+        0.785398,
+        0.0
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0x3f490fdc",
+        "0x00000000"
+      ]
+    },
+    {
+      "actorIndex": 2,
+      "actor": "StartPos",
+      "layer": "Cmn",
+      "hash": "0x8ee194777a991a27",
+      "position": [
+        0.506756,
+        10.45,
+        1.75
+      ],
+      "positionBits": [
+        "0x3f01bac2",
+        "0x41273333",
+        "0x3fe00000"
+      ],
+      "rotationRaw": [
+        0.0,
+        0.785398,
+        0.0
+      ],
+      "rotationBits": [
+        "0x00000000",
+        "0x3f490fdc",
+        "0x00000000"
+      ]
+    },
+    {
+      "actorIndex": 3,
+      "actor": "StartPos",
+      "layer": "Cmn",
+      "hash": "0x48a46abfd28d1361",
+      "position": [
+        0.506756,
+        10.49,
+        -2.0
+      ],
+      "positionBits": [
+        "0x3f01bac2",
+        "0x4127d70a",
+        "0xc0000000"
+      ],
+      "rotationRaw": [
+        -3.141593,
+        0.785398,
+        -3.141593
+      ],
+      "rotationBits": [
+        "0xc0490fda",
+        "0x3f490fdc",
+        "0xc0490fda"
+      ]
+    },
+    {
+      "actorIndex": 4,
+      "actor": "StartPos",
+      "layer": "Cmn",
+      "hash": "0x91de8e1f84731c73",
+      "position": [
+        -1.743244,
+        10.45,
+        -4.5
+      ],
+      "positionBits": [
+        "0xbfdf229c",
+        "0x41273333",
+        "0xc0900000"
+      ],
+      "rotationRaw": [
+        3.141593,
+        0.785398,
+        3.141593
+      ],
+      "rotationBits": [
+        "0x40490fdb",
+        "0x3f490fdc",
+        "0x40490fdb"
+      ]
+    },
+    {
+      "actorIndex": 5,
+      "actor": "CoopIkuraBankBase",
+      "layer": "Cmn",
+      "hash": "0x319b3a8409ca81ac",
+      "position": [
+        4.6,
+        5.00001,
+        0.0
+      ],
+      "positionBits": [
+        "0x40933333",
+        "0x40a00016",
+        "0x00000000"
+      ]
+    },
+    {
+      "actorIndex": 28,
+      "actor": "CoopHelicopterCenterPoint",
+      "layer": "Cmn",
+      "hash": "0x6f49b94d3555956e",
+      "position": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "positionBits": [
+        "0x00000000",
+        "0x40c00000",
+        "0x00000000"
+      ]
+    },
+    {
+      "actorIndex": 127,
+      "actor": "StartPos",
+      "layer": "High",
+      "hash": "0x83e531a00457fbf8",
+      "position": [
+        -19.749996,
+        10.58,
+        -53.5
+      ],
+      "positionBits": [
+        "0xc19dfffe",
+        "0x412947ae",
+        "0xc2560000"
+      ]
+    },
+    {
+      "actorIndex": 128,
+      "actor": "StartPos",
+      "layer": "High",
+      "hash": "0xfa214a4c3cea7f71",
+      "position": [
+        -28.5,
+        10.5,
+        -53.5
+      ],
+      "positionBits": [
+        "0xc1e40000",
+        "0x41280000",
+        "0xc2560000"
+      ]
+    },
+    {
+      "actorIndex": 129,
+      "actor": "StartPos",
+      "layer": "High",
+      "hash": "0x4ace15fb8de6ce6f",
+      "position": [
+        -22.499996,
+        10.58,
+        -53.5
+      ],
+      "positionBits": [
+        "0xc1b3fffe",
+        "0x412947ae",
+        "0xc2560000"
+      ]
+    },
+    {
+      "actorIndex": 130,
+      "actor": "CoopIkuraBank",
+      "layer": "High",
+      "hash": "0x021361d22e332684",
+      "position": [
+        -25.5,
+        11.5,
+        -52.5
+      ],
+      "positionBits": [
+        "0xc1cc0000",
+        "0x41380000",
+        "0xc2520000"
+      ]
+    },
+    {
+      "actorIndex": 131,
+      "actor": "StartPos",
+      "layer": "High",
+      "hash": "0x13ff00f8ac02854e",
+      "position": [
+        -31.25,
+        10.5,
+        -53.5
+      ],
+      "positionBits": [
+        "0xc1fa0000",
+        "0x41280000",
+        "0xc2560000"
+      ]
+    },
+    {
+      "actorIndex": 132,
+      "actor": "CoopIkuraBankBase",
+      "layer": "High",
+      "hash": "0xca1cae61c55d381d",
+      "position": [
+        -25.5,
+        5.500011,
+        -52.5
+      ],
+      "positionBits": [
+        "0xc1cc0000",
+        "0x40b00018",
+        "0xc2520000"
+      ]
+    },
+    {
+      "actorIndex": 133,
+      "actor": "CoopWaterLevelLocator",
+      "layer": "High",
+      "hash": "0x9cfe85bea13837a8",
+      "position": [
+        0.0,
+        7.0,
+        0.0
+      ],
+      "positionBits": [
+        "0x00000000",
+        "0x40e00000",
+        "0x00000000"
+      ]
+    },
+    {
+      "actorIndex": 137,
+      "actor": "CoopSpawnPointEnemy1",
+      "layer": "High",
+      "hash": "0x91e3976535f25c04",
+      "position": [
+        -9.000004,
+        6.0,
+        -23.750002
+      ],
+      "positionBits": [
+        "0xc1100004",
+        "0x40c00000",
+        "0xc1be0001"
+      ],
+      "rotationRaw": [
+        -1.755445,
+        -1.570796,
+        1.755445
+      ],
+      "rotationBits": [
+        "0xbfe0b26b",
+        "0xbfc90fdb",
+        "0x3fe0b269"
+      ]
+    },
+    {
+      "actorIndex": 141,
+      "actor": "CoopSpawnPointEnemy0",
+      "layer": "High",
+      "hash": "0xacb63028e4dfbac1",
+      "position": [
+        -12.500003,
+        6.0,
+        -25.5
+      ],
+      "positionBits": [
+        "0xc1480003",
+        "0x40c00000",
+        "0xc1cc0000"
+      ],
+      "rotationRaw": [
+        3.141593,
+        -1.570796,
+        3.141593
+      ],
+      "rotationBits": [
+        "0x40490fdb",
+        "0xbfc90fdb",
+        "0x40490fdb"
+      ]
+    },
+    {
+      "actorIndex": 142,
+      "actor": "CoopSpawnPointEnemy2",
+      "layer": "High",
+      "hash": "0x527fd57f146781e8",
+      "position": [
+        -10.750004,
+        6.0,
+        -21.249996
+      ],
+      "positionBits": [
+        "0xc12c0004",
+        "0x40c00000",
+        "0xc1a9fffe"
+      ],
+      "rotationRaw": [
+        0.0,
+        -1.570796,
+        0.0
+      ],
+      "rotationBits": [
+        "0x33bbbd2e",
+        "0xbfc90fdb",
+        "0x33bbbd2e"
+      ]
+    },
+    {
+      "actorIndex": 227,
+      "actor": "CoopWaterLevelLocator",
+      "layer": "Mid",
+      "hash": "0x9bcea96f8da8f054",
+      "position": [
+        -1e-06,
+        5.25,
+        -1e-06
+      ],
+      "positionBits": [
+        "0xb55eedee",
+        "0x40a80000",
+        "0xb55eedee"
+      ],
+      "rotationRaw": [
+        -3.141593,
+        -0.0,
+        -3.141593
+      ],
+      "rotationBits": [
+        "0xc0490fda",
+        "0x80000000",
+        "0xc0490fda"
+      ]
+    },
+    {
+      "actorIndex": 230,
+      "actor": "CoopSpawnPointEnemy2",
+      "layer": "Mid",
+      "hash": "0xfdd217eb966edb88",
+      "position": [
+        2.25,
+        3.00192,
+        -41.25
+      ],
+      "positionBits": [
+        "0x40100000",
+        "0x40401f77",
+        "0xc2250000"
+      ]
+    },
+    {
+      "actorIndex": 233,
+      "actor": "CoopSpawnPointEnemy0",
+      "layer": "Mid",
+      "hash": "0xb9382d58c6f8c069",
+      "position": [
+        31.25,
+        7.527414,
+        30.75
+      ],
+      "positionBits": [
+        "0x41fa0000",
+        "0x40f0e093",
+        "0x41f60000"
+      ],
+      "rotationRaw": [
+        0.0,
+        -1.570796,
+        0.0
+      ],
+      "rotationBits": [
+        "0x34222169",
+        "0xbfc90fdb",
+        "0x34222169"
+      ]
+    },
+    {
+      "actorIndex": 241,
+      "actor": "CoopSpawnPointEnemy1",
+      "layer": "Mid",
+      "hash": "0x05bbb654747c7a50",
+      "position": [
+        -2.5,
+        3.0,
+        41.0
+      ],
+      "positionBits": [
+        "0xc0200000",
+        "0x40400000",
+        "0x42240000"
+      ],
+      "rotationRaw": [
+        3.141593,
+        -0.0,
+        3.141593
+      ],
+      "rotationBits": [
+        "0x40490fdb",
+        "0xb3bbbd2e",
+        "0x40490fdb"
+      ]
+    },
+    {
+      "actorIndex": 334,
+      "actor": "CoopWaterLevelLocator",
+      "layer": "Low",
+      "hash": "0x8e482bf0af43670b",
+      "position": [
+        -0.0,
+        2.0,
+        -0.0
+      ],
+      "positionBits": [
+        "0xb4a22162",
+        "0x40000000",
+        "0xb4a22162"
+      ],
+      "rotationRaw": [
+        -3.141593,
+        -0.0,
+        -3.141593
+      ],
+      "rotationBits": [
+        "0xc0490fda",
+        "0x80000000",
+        "0xc0490fda"
+      ]
+    },
+    {
+      "actorIndex": 341,
+      "actor": "CoopSpawnPointEnemy0",
+      "layer": "Low",
+      "hash": "0x852fa5ffb6250f8a",
+      "position": [
+        29.0,
+        10.5,
+        60.25
+      ],
+      "positionBits": [
+        "0x41e80000",
+        "0x41280000",
+        "0x42710000"
+      ],
+      "rotationRaw": [
+        3.141593,
+        -0.0,
+        3.141593
+      ],
+      "rotationBits": [
+        "0x40490fdb",
+        "0xb3bbbd2e",
+        "0x40490fdb"
+      ]
+    },
+    {
+      "actorIndex": 343,
+      "actor": "CoopSpawnPointEnemy1",
+      "layer": "Low",
+      "hash": "0xfd53935c832521a3",
+      "position": [
+        1.5,
+        3.047214,
+        50.75
+      ],
+      "positionBits": [
+        "0x3fc00000",
+        "0x4043058f",
+        "0x424b0000"
+      ],
+      "rotationRaw": [
+        -3.141593,
+        -0.0,
+        -3.141593
+      ],
+      "rotationBits": [
+        "0xc0490fda",
+        "0x80000000",
+        "0xc0490fda"
+      ]
+    },
+    {
+      "actorIndex": 367,
+      "actor": "CoopSpawnPointEnemy2",
+      "layer": "Low",
+      "hash": "0x63a37632d99a8291",
+      "position": [
+        18.25,
+        13.5,
+        72.75
+      ],
+      "positionBits": [
+        "0x41920000",
+        "0x41580000",
+        "0x42918000"
+      ],
+      "rotationRaw": [
+        -3.141593,
+        -0.0,
+        -3.141593
+      ],
+      "rotationBits": [
+        "0xc0490fda",
+        "0x80000000",
+        "0xc0490fda"
+      ]
+    },
+    {
+      "actorIndex": 378,
+      "actor": "StartPos",
+      "layer": "Low",
+      "hash": "0xa76292be1af3dfe2",
+      "position": [
+        21.250004,
+        11.129142,
+        15.25
+      ],
+      "positionBits": [
+        "0x41aa0002",
+        "0x413210f7",
+        "0x41740000"
+      ]
+    },
+    {
+      "actorIndex": 379,
+      "actor": "CoopIkuraBank",
+      "layer": "Low",
+      "hash": "0xcbe2c2c8c929a9de",
+      "position": [
+        10.5,
+        7.500012,
+        27.5
+      ],
+      "positionBits": [
+        "0x41280000",
+        "0x40f00019",
+        "0x41dc0000"
+      ]
+    },
+    {
+      "actorIndex": 380,
+      "actor": "CoopIkuraBankBase",
+      "layer": "Low",
+      "hash": "0x45e9fa25cac25804",
+      "position": [
+        10.5,
+        1.500011,
+        27.5
+      ],
+      "positionBits": [
+        "0x41280000",
+        "0x3fc00060",
+        "0x41dc0000"
+      ]
+    },
+    {
+      "actorIndex": 381,
+      "actor": "StartPos",
+      "layer": "Low",
+      "hash": "0x3b00a7f3aea45166",
+      "position": [
+        19.5,
+        10.997663,
+        12.75
+      ],
+      "positionBits": [
+        "0x419c0000",
+        "0x412ff66e",
+        "0x414c0000"
+      ]
+    },
+    {
+      "actorIndex": 382,
+      "actor": "StartPos",
+      "layer": "Low",
+      "hash": "0xbf0ece29ed250aa3",
+      "position": [
+        24.750004,
+        10.987076,
+        15.25
+      ],
+      "positionBits": [
+        "0x41c60002",
+        "0x412fcb10",
+        "0x41740000"
+      ]
+    },
+    {
+      "actorIndex": 383,
+      "actor": "StartPos",
+      "layer": "Low",
+      "hash": "0x617c7005526c990b",
+      "position": [
+        23.073223,
+        11.25,
+        12.75
+      ],
+      "positionBits": [
+        "0x41b895f6",
+        "0x41340000",
+        "0x414c0000"
+      ]
+    }
+  ]
+}

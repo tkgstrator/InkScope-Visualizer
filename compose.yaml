@@ -1,0 +1,20 @@
+name: inkscope-visualizer
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: inkscope
+      POSTGRES_USER: inkscope
+      POSTGRES_PASSWORD: inkscope_local_only
+    ports:
+      - "127.0.0.1:10253:5432"
+    volumes:
+      - inkscope-visualizer-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inkscope -d inkscope"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  inkscope-visualizer-pgdata:

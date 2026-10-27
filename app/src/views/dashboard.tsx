@@ -1,0 +1,241 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Activity, Pause, Play, Radio } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { NavMenu } from "@/components/dashboard/nav-menu"
+import { Overlay } from "@/components/dashboard/obs-overlay"
+import { type Filter } from "@/components/dashboard/packet-list"
+import { SessionStatus } from "@/components/dashboard/session-status"
+import { StageMap } from "@/components/dashboard/stage-map"
+import { useLiveFeed, useOverlayFeed } from "@/lib/live-feed"
+import { useReplayArchive } from "@/lib/replay-archive"
+import { livePacketRows } from "@/lib/packet-view"
+import { DebugView } from "./debug-view"
+import { RawView } from "./raw-view"
+import { ReplayView } from "./replay-view"
+import { ObsView } from "./obs-view"
+import { OverviewView } from "./overview-view"
+import { SettingsView } from "./settings-view"
+import { demoTime, initialPackets, makePacket, packetTemplates, serverIp, type Packet } from "@/demo-data"
+
+type View = "overview" | "debug" | "raw" | "map" | "replay" | "obs" | "settings"
+const views: View[] = ["overview", "debug", "raw", "map", "replay", "obs", "settings"]
+const waveData = [
+  { wave: 1, tide: "Low tide", event: "Normal", quota: 21, state: "COMPLETE" },
+  { wave: 2, tide: "Normal tide", event: "Event 5", quota: 24, state: "IN PROGRESS" },
+  { wave: 3, tide: "High tide", event: "Normal", quota: 26, state: "UP NEXT" },
+] as const
+export function Dashboard() {
+  const overlayMode = new URLSearchParams(window.location.search).get("view") === "overlay"
+  const [source, setSource] = useState<"demo" | "live">(() => new URLSearchParams(window.location.search).get("source") === "live" ? "live" : "demo")
+  const [view, setView] = useState<View>("overview")
+  const [localGameKey, setLocalGameKey] = useState<string | null>(null)
+  const [controlKeyState, setControlKeyState] = useState<"absent" | "pending" | "applied" | null>(null)
+  const [controlKeyLocked, setControlKeyLocked] = useState(false)
+  const [packets, setPackets] = useState<Packet[]>(initialPackets)
+  const [selectedId, setSelectedId] = useState("487")
+  const [search, setSearch] = useState("")
+  const [filter, setFilter] = useState<Filter>("all")
+  const [paused, setPaused] = useState(false)
+  const [tick, setTick] = useState(0)
+  const [total, setTotal] = useState(8)
+  const [authenticated, setAuthenticated] = useState(7)
+  const [clock, setClock] = useState(demoTime())
+  const [wave, setWave] = useState(2)
+  const [replayPosition, setReplayPosition] = useState(() => new URLSearchParams(window.location.search).get("source") === "live" ? 0 : 45)
+  const [replayPlaying, setReplayPlaying] = useState(false)
+  const [verticalNav, setVerticalNav] = useState(() => window.matchMedia("(min-width: 1280px)").matches)
+  const nextRecord = useRef(488)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const liveFeed = useLiveFeed(source === "live" && !overlayMode)
+  const overlayFeed = useOverlayFeed(source === "live" && overlayMode)
+  const livePackets = useMemo(() => livePacketRows(liveFeed.events), [liveFeed.events])
+  const replayArchive = useReplayArchive(source === "live" && view === "replay" && liveFeed.persistence === "postgres")
+  const activePackets = source === "demo" ? packets : livePackets
+  const reportControlState = useCallback((keyState: "absent" | "pending" | "applied" | null, keyLocked: boolean) => {
+    setControlKeyState(keyState)
+    setControlKeyLocked(keyLocked)
+    if (keyLocked || keyState !== "applied" && keyState !== "pending") setLocalGameKey(null)
+  }, [])
+
+  useEffect(() => {
+    if (overlayMode || view === "settings") return
+    const controller = new AbortController()
+    const refresh = () => {
+      void fetch("/api/control/status", { signal: controller.signal, cache: "no-store" })
+        .then(async (response) => response.ok ? response.json() as Promise<{ state?: string; key_state?: "absent" | "pending" | "applied"; key_locked?: boolean }> : null)
+        .then((status) => {
+          if (controller.signal.aborted) return
+          const locked = status?.state === "reachable" && status.key_locked === true
+          setControlKeyState(status?.state === "reachable" ? status.key_state ?? null : null)
+          setControlKeyLocked(locked)
+          if (locked || status?.state !== "reachable" || status.key_state !== "applied" && status.key_state !== "pending") setLocalGameKey(null)
+        })
+        .catch(() => { if (!controller.signal.aborted) { setControlKeyState(null); setControlKeyLocked(false); setLocalGameKey(null) } })
+    }
+    refresh()
+    const timer = window.setInterval(refresh, 5_000)
+    return () => { controller.abort(); window.clearInterval(timer) }
+  }, [overlayMode, view])
+
+  useEffect(() => {
+    document.documentElement.classList.add("dark")
+    const timer = window.setInterval(() => setClock(demoTime()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1280px)")
+    const update = () => setVerticalNav(media.matches)
+    media.addEventListener("change", update)
+    return () => media.removeEventListener("change", update)
+  }, [])
+
+  useEffect(() => {
+    if (paused || source !== "demo") return
+    const timer = window.setInterval(() => {
+      const id = nextRecord.current++
+      const template = packetTemplates[id % packetTemplates.length]!
+      setPackets((current) => [makePacket(id, template), ...current].slice(0, 80))
+      setTotal(id - 479)
+      if (template.status !== "authentication_failed") setAuthenticated((current) => current + 1)
+      setTick((current) => current + 1)
+    }, 1800)
+    return () => window.clearInterval(timer)
+  }, [paused, source])
+
+  useEffect(() => {
+    if (!replayPlaying) return
+    const timer = window.setInterval(() => setReplayPosition((current) => {
+      const last = source === "demo" ? 100 : replayArchive.selectedEvents.length - 1
+      if (current >= last) {
+        setReplayPlaying(false)
+        return current
+      }
+      return current + 1
+    }), source === "demo" ? 250 : 500)
+    return () => window.clearInterval(timer)
+  }, [replayPlaying, source, replayArchive.selectedEvents.length])
+
+  const selectReplaySession = (sessionId: string) => {
+    replayArchive.selectSession(sessionId)
+    setReplayPosition(0)
+    setReplayPlaying(false)
+  }
+
+  const filtered = useMemo(() => activePackets.filter((packet) => {
+    const matchesStatus = filter === "all" || filter === "failed" && (packet.status.includes("fail") || packet.status === "malformed") ||
+      filter === "authenticated" && (packet.status === "authenticated" || packet.status === "proof_verified")
+    const text = `${packet.id} ${packet.protocol} ${packet.kind} ${packet.source} ${packet.destination} ${packet.status}`.toLowerCase()
+    return matchesStatus && text.includes(search.toLowerCase())
+  }), [activePackets, search, filter])
+  const selected = activePackets.find((packet) => packet.id === selectedId) ?? activePackets[0]
+  const selectedIdForView = selected?.id ?? ""
+  const serverRtt = (38.2 + Math.sin(tick / 3) * 3.4).toFixed(1)
+  const clientRtt = (42.6 + Math.cos(tick / 4) * 4.1).toFixed(1)
+  const liveTotal = liveFeed.events.length
+  const liveAuthenticated = liveFeed.events.filter((event) => event.rows.some((row) => row.status === "authenticated" || row.status === "proof_verified")).length
+  const obsUrl = window.location.origin + window.location.pathname + (source === "live" ? "?view=overlay&source=live" : `?view=overlay&wave=${wave}`)
+  const selectedWave = waveData.find((item) => item.wave === wave) ?? waveData[1]
+  const requestedWave = Number(new URLSearchParams(window.location.search).get("wave"))
+  const overlayWave = [1, 2, 3].includes(requestedWave) ? requestedWave : wave
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return
+      const onPage = event.target === document.body
+      const onNavTab = event.target instanceof Element && event.target.closest('[role="tab"]') !== null
+      if (!onPage && !onNavTab) return
+      const number = Number(event.key)
+      if (number >= 1 && number <= views.length) setView(views[number - 1]!)
+      if (event.key === " " && onPage && source === "demo") {
+        event.preventDefault()
+        setPaused((current) => !current)
+      }
+      if (event.key === "/" && (view === "debug" || view === "raw")) {
+        event.preventDefault()
+        searchRef.current?.focus()
+      }
+      if (onPage && (event.key === "ArrowUp" || event.key === "ArrowDown") && (view === "debug" || view === "raw")) {
+        const index = filtered.findIndex((packet) => packet.id === selectedId)
+        const next = Math.min(filtered.length - 1, Math.max(0, index + (event.key === "ArrowDown" ? 1 : -1)))
+        if (filtered[next]) { event.preventDefault(); setSelectedId(filtered[next].id) }
+      }
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [filtered, selectedId, source, view])
+
+  if (overlayMode) return <Overlay serverRtt={serverRtt} clientRtt={clientRtt} wave={overlayWave} quota={(waveData.find((item) => item.wave === overlayWave) ?? waveData[1]).quota} source={source} liveFeed={overlayFeed} />
+
+  return (
+    <div className="h-screen overflow-hidden bg-background text-foreground max-xl:h-auto max-xl:overflow-visible">
+      <header className="flex h-16 items-center justify-between border-b bg-sidebar px-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-8 items-center justify-center rounded-sm border"><Activity className="size-4" /></div>
+          <div className="text-base font-semibold tracking-tight">InkScope <span className="font-normal text-muted-foreground">Visualizer</span></div>
+        </div>
+        <div className="flex items-center gap-3">
+          {source === "demo" && <Button size="icon" variant="outline" className="rounded-sm sm:w-auto sm:px-3" aria-label={paused ? "Resume demo" : "Pause demo"} onClick={() => setPaused((current) => !current)}>{paused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}<span className="hidden sm:inline">{paused ? "Resume demo" : "Pause demo"}</span></Button>}
+          <Button size="icon" variant="outline" className="rounded-sm sm:w-auto sm:px-3" aria-label={source === "demo" ? "Switch to live feed" : "Switch to demo feed"} onClick={() => { setSource((current) => current === "demo" ? "live" : "demo"); setSelectedId(""); setReplayPosition(source === "demo" ? 0 : 45); setReplayPlaying(false) }}><Radio className="size-3.5" /><span className="hidden sm:inline">{source === "demo" ? "LIVE" : "DEMO"}</span></Button>
+          <Badge variant="outline" className="hidden rounded-sm font-mono text-xs sm:inline-flex">{source === "demo" ? "DEMO DATA" : `LIVE ${liveFeed.connection.toUpperCase()}`}</Badge>
+          <Separator orientation="vertical" className="hidden h-5 sm:block" />
+          <span className="hidden font-mono text-xs text-muted-foreground sm:block">{clock} JST</span>
+        </div>
+      </header>
+
+      <Tabs value={view} onValueChange={(value) => setView(value as View)} orientation={verticalNav ? "vertical" : "horizontal"} className="grid h-[calc(100vh-4rem)] grid-cols-[64px_280px_minmax(0,1fr)] gap-0 max-xl:block max-xl:h-auto">
+        <NavMenu />
+        <SessionStatus serverRtt={serverRtt} clientRtt={clientRtt} wave={wave} quota={selectedWave.quota} source={source} connection={liveFeed.connection} liveEvents={liveFeed.events} localGameKey={localGameKey} controlKeyState={controlKeyState} controlKeyLocked={controlKeyLocked} />
+
+        <main className={view === "map" ? "h-full min-h-0 min-w-0 overflow-hidden p-0 max-xl:h-[min(78vh,760px)]" : "min-w-0 overflow-y-auto p-6 max-xl:overflow-visible max-sm:p-3"}>
+          <div className={view === "map" ? "h-full w-full" : "mx-auto max-w-[1500px]"}>
+              <TabsContent value="overview">
+                <OverviewView
+                  source={source}
+                  total={source === "demo" ? total : liveTotal}
+                  authenticated={source === "demo" ? authenticated : liveAuthenticated}
+                  clientRtt={source === "demo" ? clientRtt : null}
+                  wave={source === "demo" ? wave : null}
+                  waves={source === "demo" ? waveData : []}
+                  onWaveChange={setWave}
+                  serverIp={source === "demo" ? serverIp : undefined}
+                  activities={source === "demo" ? undefined : liveFeed.events.slice(-8).reverse().map((event) => ({
+                    id: `${event.session_id}:${event.record}`,
+                    label: event.rows[0]?.kind ?? "UDP",
+                    detail: `#${event.record} · ${event.rows[0]?.status ?? "unparsed"}`,
+                  }))}
+                />
+              </TabsContent>
+
+              <TabsContent value="debug">
+                <DebugView packets={filtered} selected={selected} selectedId={selectedIdForView} onSelectPacket={setSelectedId} search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} inputRef={searchRef} source={source} />
+              </TabsContent>
+
+              <TabsContent value="raw">
+                <RawView packets={filtered} selected={selected} selectedId={selectedIdForView} onSelectPacket={setSelectedId} search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} inputRef={searchRef} source={source} />
+              </TabsContent>
+
+              <TabsContent value="map" className="m-0 h-full">
+                <StageMap tick={tick} />
+              </TabsContent>
+
+              <TabsContent value="replay">
+                <ReplayView source={source} persistence={liveFeed.persistence ?? "memory"} sessions={replayArchive.sessions} selectedSessionId={replayArchive.selectedSessionId} selectedEvents={replayArchive.selectedEvents} loading={replayArchive.loading} error={replayArchive.error} hasMore={replayArchive.hasMore} onSelectSession={selectReplaySession} onLoadMore={replayArchive.loadMore} position={replayPosition} playing={replayPlaying} onPositionChange={setReplayPosition} onPlayingChange={setReplayPlaying} />
+              </TabsContent>
+
+              <TabsContent value="obs">
+                <ObsView wave={source === "demo" ? wave : null} source={source} overlayUrl={obsUrl} />
+              </TabsContent>
+
+              <TabsContent value="settings">
+                <SettingsView onGameKeyConnected={(key) => { setLocalGameKey(key); setControlKeyLocked(false); setSource("live") }} onControlConnected={() => { setLocalGameKey(null); setSource("live") }} onDisconnected={() => { setLocalGameKey(null); setControlKeyState("absent"); setControlKeyLocked(false) }} onStatus={reportControlState} />
+              </TabsContent>
+          </div>
+        </main>
+      </Tabs>
+    </div>
+  )
+}
