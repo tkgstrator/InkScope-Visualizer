@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test"
 import { samplePacket } from "../../../api/test-fixture"
 import type { PacketEnvelope, WireRow } from "../../../api/wire"
 import {
-  buildReplayGameTimeline, replayActiveSpawns, replayGameSnapshotAt,
+  buildReplayGameTimeline, replayActiveSpawns, replayGameSnapshotAt, replayRemainingSecondsAt,
 } from "./replay-game-state"
 
 const baseTime = 1_792_939_600_000_000_000n
@@ -23,6 +23,75 @@ function row(kind: string, fields: Record<string, string>, status = "authenticat
 }
 
 describe("capture-backed replay game state", () => {
+  it("estimates a 100-second countdown from authenticated gameplay frames across two waves", () => {
+    const timeline = buildReplayGameTimeline([
+      packet(28833, 0, [row("OnlineCoopSetting", { StageResource: "Cop_Shakedent", GameFrame: "139296" })]),
+      packet(29060, 10_028, [row("CoopSequenceNetState", { Sequence: "0", Quota: "4" })]),
+      packet(29726, 32_470, [row("CoopEnemySpawnNetEvent", { GameFrame: "1358" })]),
+      packet(32657, 131_479, [row("CoopEnemySpawnNetEvent", { GameFrame: "7299" })]),
+      packet(32813, 136_797, [row("CoopSequenceNetState", { Sequence: "1", Quota: "4" })]),
+      packet(33261, 151_815, [row("CoopEnemySpawnNetEvent", { GameFrame: "8517" })]),
+      packet(36214, 251_482, [row("CoopItemResponseGetByEnemyEvent", { GameFrame: "14499" })]),
+    ])
+    expect(replayGameSnapshotAt(timeline, 0).remainingSeconds).toBeNull()
+    expect(replayGameSnapshotAt(timeline, 1).remainingSeconds).toBeNull()
+    expect(replayGameSnapshotAt(timeline, 2)).toMatchObject({
+      remainingSeconds: 100, remainingSecondsEstimated: true, wave: null,
+    })
+    expect(replayGameSnapshotAt(timeline, 3).remainingSeconds).toBe(1)
+    expect(replayGameSnapshotAt(timeline, 4).remainingSeconds).toBeNull()
+    expect(replayGameSnapshotAt(timeline, 5).remainingSeconds).toBe(100)
+    expect(replayGameSnapshotAt(timeline, 6).remainingSeconds).toBe(1)
+  })
+
+  it("does not derive a countdown from unauthenticated, malformed, or mismatched frames", () => {
+    const timeline = buildReplayGameTimeline([
+      packet(1, 0, [row("CoopSequenceNetState", { Sequence: "0", Wave: "1" })]),
+      packet(2, 100, [row("OnlineCoopSetting", { GameFrame: "139296" })]),
+      packet(3, 200, [row("CoopEnemySpawnNetEvent", { GameFrame: "1358" }, "authentication_failed")]),
+      packet(4, 300, [row("CoopEnemySpawnNetEvent", { GameFrame: "NaN" })]),
+      packet(5, 400, [row("CoopEnemySpawnNetEvent", { GameFrame: "139296" })]),
+      packet(6, 500, [row("CoopEnemySpawnNetEvent", { GameFrame: "1358" })]),
+      packet(7, 600, [row("CoopSequenceNetState", { Sequence: "1" })]),
+      packet(8, 700, [row("CoopEnemySpawnNetEvent", { GameFrame: "8517" })]),
+    ])
+    for (const index of [0, 1, 2, 3, 4, 6]) {
+      expect(replayGameSnapshotAt(timeline, index).remainingSeconds).toBeNull()
+      expect(replayGameSnapshotAt(timeline, index).remainingSecondsEstimated).toBe(false)
+    }
+    expect(replayGameSnapshotAt(timeline, 5)).toMatchObject({
+      remainingSeconds: 100, remainingSecondsEstimated: true, wave: "1",
+    })
+    expect(replayGameSnapshotAt(timeline, 7)).toMatchObject({
+      remainingSeconds: 100, wave: "1",
+    })
+  })
+
+  it("interpolates from the latest frame at the playhead and stops after the wave", () => {
+    const timeline = buildReplayGameTimeline([
+      packet(1, 0, [row("CoopSequenceNetState", { Sequence: "0" })]),
+      packet(2, 1_000, [row("CoopEnemySpawnNetEvent", { GameFrame: "1358" })]),
+      packet(3, 10_000, [row("CoopSequenceNetState", { Sequence: "0" })]),
+    ])
+    expect(replayRemainingSecondsAt(timeline, 1, String(baseTime + 11_000_000_000n))).toBe(90)
+    expect(replayRemainingSecondsAt(timeline, 2, String(baseTime + 10_000_000_000n))).toBe(91)
+    expect(replayRemainingSecondsAt(timeline, 0, String(baseTime + 11_000_000_000n))).toBeNull()
+    expect(replayRemainingSecondsAt(timeline, 1, String(baseTime + 999_000_000n))).toBeNull()
+    expect(replayRemainingSecondsAt(timeline, 1, "invalid")).toBeNull()
+    expect(replayRemainingSecondsAt(timeline, 1, String(baseTime + 102_000_000_000n))).toBeNull()
+  })
+
+  it("keeps the countdown moving forward when a delayed packet has an older GameFrame", () => {
+    const timeline = buildReplayGameTimeline([
+      packet(1, 0, [row("CoopSequenceNetState", { Sequence: "0" })]),
+      packet(2, 1_000, [row("CoopEnemySpawnNetEvent", { GameFrame: "1500" })]),
+      packet(3, 2_000, [row("CoopEnemySpawnNetEvent", { GameFrame: "1400" })]),
+    ])
+    expect(replayGameSnapshotAt(timeline, 1).remainingSeconds).toBe(97)
+    expect(replayGameSnapshotAt(timeline, 2).remainingSeconds).toBe(96)
+    expect(replayRemainingSecondsAt(timeline, 2, String(baseTime + 2_500_000_000n))).toBe(96)
+  })
+
   it("keeps playhead values separate from the remembered session stage", () => {
     const events = [
       packet(1, 0, [row("OnlineCoopSetting", {

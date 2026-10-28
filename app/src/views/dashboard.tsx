@@ -12,7 +12,7 @@ import { StageMap } from "@/components/dashboard/stage-map"
 import { useLiveFeed, useOverlayFeed } from "@/lib/live-feed"
 import { useReplayArchive } from "@/lib/replay-archive"
 import { replayIndexAtMs, replayOffsetsMs } from "@/lib/replay-clock"
-import { buildReplayGameTimeline, replayActiveSpawns, replayGameSnapshotAt, type ReplaySpawn } from "@/lib/replay-game-state"
+import { buildReplayGameTimeline, replayActiveSpawns, replayGameSnapshotAt, replayRemainingSecondsAt, type ReplaySpawn } from "@/lib/replay-game-state"
 import { livePacketRows, packetRowsForEvents } from "@/lib/packet-view"
 import { useRecordedSample } from "@/lib/recorded-sample"
 import { emptySessionObservation, foldObservationSnapshot } from "@/lib/session-observation"
@@ -83,7 +83,14 @@ export function Dashboard() {
   const replayOffsets = useMemo(() => replayOffsetsMs(replayArchive.selectedEvents), [replayArchive.selectedEvents])
   const replayDurationMs = replayOffsets.at(-1) ?? 0
   const replayGameTimeline = useMemo(() => buildReplayGameTimeline(replayArchive.selectedEvents), [replayArchive.selectedEvents])
-  const replayHud = useMemo(() => replayGameSnapshotAt(replayGameTimeline, replayPosition), [replayGameTimeline, replayPosition])
+  const replayHud = useMemo(() => {
+    const snapshot = replayGameSnapshotAt(replayGameTimeline, replayPosition)
+    const first = replayArchive.selectedEvents[0]
+    if (!first) return snapshot
+    const playheadNs = BigInt(first.timestamp_ns) + BigInt(Math.round(replayElapsedMs * 1_000_000))
+    const remainingSeconds = replayRemainingSecondsAt(replayGameTimeline, replayPosition, playheadNs.toString())
+    return { ...snapshot, remainingSeconds, remainingSecondsEstimated: remainingSeconds !== null }
+  }, [replayGameTimeline, replayPosition, replayElapsedMs, replayArchive.selectedEvents])
   const replaySpawnsCache = useRef<ReplaySpawn[]>([])
   const replaySpawns = useMemo(() => {
     const first = replayArchive.selectedEvents[0]

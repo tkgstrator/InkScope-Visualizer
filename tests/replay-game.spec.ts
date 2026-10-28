@@ -92,3 +92,33 @@ test("Replay HUD and 3D map follow the capture clock when seeking", async ({ pag
   await page.getByRole("button", { name: /#6.*PrivateSetting/ }).click()
   await expect(page.getByRole("region", { name: "Replay map Cop_Unknown" })).toBeVisible()
 })
+
+test("Replay HUD countdown advances between GameFrame packets and clears on restart", async ({ page }) => {
+  const frameEvents = [
+    event(1, 0, "OnlineCoopSetting", [{ name: "StageResource", value: "Cop_Shakedent" }]),
+    event(2, 1, "CoopSequenceNetState", [{ name: "Sequence", value: "0" }]),
+    event(3, 2, "CoopEnemySpawnNetEvent", [{ name: "GameFrame", value: "1358" }]),
+    event(4, 12, "CoopSequenceNetState", [{ name: "Sequence", value: "0" }]),
+  ]
+  await page.route("**/api/sample", (route) => route.fulfill({ json: {
+    version: 1, state: "ready", session_id: packet.session_id, after_record: "0", start_index: 0, events: frameEvents,
+  } }))
+  await page.route("**/api/sessions**", (route) => route.fulfill({ json: { version: 1, sessions: [
+    { session_id: packet.session_id, events: "4", first_timestamp_ns: frameEvents[0]!.timestamp_ns, last_timestamp_ns: frameEvents[3]!.timestamp_ns },
+  ] } }))
+  await page.route(/\/api\/sessions\/[^/]+\/events\?/, (route) => route.fulfill({ json: {
+    version: 1, session_id: packet.session_id, events: frameEvents,
+  } }))
+
+  await page.goto("/")
+  await page.getByRole("tab", { name: "Replay" }).click()
+  const remaining = page.getByRole("region", { name: "Replay HUD" }).locator(".replay-hud-display")
+  await expect(remaining).toHaveAttribute("aria-label", "Remaining time unavailable")
+  await page.locator("summary").filter({ hasText: "EVENTS" }).click()
+  await page.getByRole("button", { name: /#3.*CoopEnemySpawnNetEvent/ }).click()
+  await expect(remaining).toHaveAttribute("aria-label", "Estimated remaining time 100 seconds")
+  await page.getByRole("button", { name: "Play replay" }).click()
+  await expect(remaining).toHaveAttribute("aria-label", "Estimated remaining time 99 seconds", { timeout: 4_000 })
+  await page.getByRole("button", { name: "Restart replay" }).click()
+  await expect(remaining).toHaveAttribute("aria-label", "Remaining time unavailable")
+})

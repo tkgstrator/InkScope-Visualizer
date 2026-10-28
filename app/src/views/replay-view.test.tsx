@@ -28,7 +28,7 @@ test("saved replay shows a continuous captured-time timeline without page contro
       onPlayingChange={() => {}}
       onRestart={() => {}}
       resetEpoch={0}
-      hud={{ ...replayGameSnapshotAt({ snapshots: [], spawns: [] }, -1), stageId: "Cop_Shakedent", sessionStageId: "Cop_Shakedent", difficulty: "150", quota: "4", enemySpawnCount: 1 }}
+      hud={{ ...replayGameSnapshotAt({ snapshots: [], spawns: [], gameFrameAnchors: [] }, -1), stageId: "Cop_Shakedent", sessionStageId: "Cop_Shakedent", difficulty: "150", quota: "4", enemySpawnCount: 1 }}
       activeSpawns={[]}
       keyStatus="—"
     />,
@@ -42,6 +42,9 @@ test("saved replay shows a continuous captured-time timeline without page contro
   expect(html).toContain("Cop_Shakedent")
   expect(html).toContain("DIFFICULTY")
   expect(html).toContain("ENEMY SPAWN")
+  expect(html).toContain("TIME")
+  expect(html).toContain("Remaining time unavailable")
+  expect(html).toContain("replay-hud-font")
   expect(html).toContain('aria-label="Replay session"')
   expect(html).not.toContain("PAGE ")
   expect(html).not.toContain("Previous page")

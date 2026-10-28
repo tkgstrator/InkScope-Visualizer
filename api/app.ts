@@ -11,6 +11,8 @@ export const distDir = resolve(import.meta.dirname, "../app/dist")
 export const indexPath = resolve(distDir, "index.html")
 export const localTerrainDir = resolve(import.meta.dirname, "../app/public/maps/local")
 export const localTerrainPath = resolve(localTerrainDir, "cop-shakedent.glb")
+export const localFontDir = resolve(import.meta.dirname, "../app/public/local-fonts")
+const localFontNames = new Set(["splatoon1-common.woff2", "splatoon2-common.woff2"])
 const localTerrainNames = new Set([
   "cop-carousel.glb", "cop-district00.glb", "cop-factory.glb", "cop-manbou00.glb",
   "cop-section.glb", "cop-shakedent.glb", "cop-shakehighway.glb", "cop-shakelift.glb",
@@ -244,6 +246,21 @@ export function createApp(options: { store?: LiveStore; ingestToken?: string | n
         "Content-Type": "model/gltf-binary",
         "Content-Length": String(terrain.size),
         "Cache-Control": "private, max-age=3600, must-revalidate",
+      },
+    })
+  })
+
+  app.on(["GET", "HEAD"], "/local-fonts/:name", async (context) => {
+    const name = context.req.param("name")
+    if (!localFontNames.has(name)) return context.notFound()
+    const font = Bun.file(resolve(localFontDir, name))
+    if (!(await font.exists())) return context.notFound()
+    return new Response(context.req.method === "HEAD" ? null : font, {
+      headers: {
+        "Content-Type": "font/woff2",
+        "Content-Length": String(font.size),
+        "Cache-Control": "private, max-age=3600, must-revalidate",
+        "X-Content-Type-Options": "nosniff",
       },
     })
   })

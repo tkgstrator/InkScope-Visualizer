@@ -3,6 +3,33 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/m-plus-1-code";
 
+/* Optional local Nintendo font cache. The files are never committed or redistributed. */
+@font-face {
+    font-family: "InkScope Splatoon 2";
+    src: url("/local-fonts/splatoon2-common.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "InkScope Splatoon 1";
+    src: url("/local-fonts/splatoon1-common.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+}
+
+.replay-hud-font {
+    font-family: "InkScope Splatoon 2", "M PLUS 1 Code Variable", monospace;
+    font-synthesis: none;
+}
+
+.replay-hud-display {
+    font-family: "InkScope Splatoon 1", "InkScope Splatoon 2", "M PLUS 1 Code Variable", monospace;
+    font-synthesis: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

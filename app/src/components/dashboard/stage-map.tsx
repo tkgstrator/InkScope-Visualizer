@@ -368,7 +368,7 @@ export function StageMap({ tick, source, observedStageId, observedTide, connecti
         ) : fallback}
       </div>
 
-      <div className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-between gap-2 p-3 ${presentation === "replay" ? "max-sm:pt-[200px]" : ""}`}>
+      <div className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-between gap-2 p-3 ${presentation === "replay" ? "max-sm:pt-[292px]" : ""}`}>
         <div className="flex items-start justify-between gap-2 max-sm:flex-col">
           {presentation === "full" && <section className="pointer-events-auto w-[min(310px,100%)] rounded-sm border bg-sidebar/90 p-2 backdrop-blur-md" aria-label="Map status and stage">
             <div className="flex items-baseline justify-between gap-2">

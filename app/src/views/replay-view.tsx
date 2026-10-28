@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { FlatCard } from "@/components/dashboard/flat-card"
+import { ReplayHud } from "./replay-hud"
 import { StageMap } from "@/components/dashboard/stage-map"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ReplayGameSnapshot, ReplaySpawn } from "@/lib/replay-game-state"
 import type { PacketEnvelope } from "../../../api/wire"
 
@@ -55,10 +55,6 @@ function captureTime(timestampNs: string): string {
   } catch {
     return timestampNs
   }
-}
-
-function shortSessionId(sessionId: string): string {
-  return sessionId.slice(0, 8)
 }
 
 function formatElapsed(milliseconds: number): string {
@@ -126,7 +122,6 @@ export function ReplayView({
 
   if (source !== "demo") {
     const mapStage = hud.stageId ?? hud.sessionStageId
-    const latestActiveSpawn = activeSpawns.at(-1)
     return (
       <div className="relative h-full min-h-[520px] w-full overflow-hidden bg-[#111316]" aria-label="Replay stage">
         <div className="absolute inset-0">
@@ -135,98 +130,13 @@ export function ReplayView({
         </div>
 
         <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between gap-3 p-3 sm:p-4">
-          <section className="pointer-events-auto w-full rounded-sm border bg-sidebar/90 p-2 font-mono text-xs backdrop-blur-sm sm:hidden" aria-label="Replay HUD">
-            <div className="flex items-center justify-between gap-2">
-              <strong className="tracking-widest">REPLAY</strong>
-              <time className="min-w-0 truncate text-right tabular-nums">{captureClock} {firstLoaded ? "JST" : ""}</time>
-            </div>
-            <div className="mt-1 flex items-center justify-between gap-2 border-t pt-1">
-              <strong className="min-w-0 truncate">{mapStage ?? "STAGE —"}</strong>
-              <span className="shrink-0">DIFFICULTY {hud.difficulty ?? "—"}</span>
-            </div>
-            <div className="mt-1 grid grid-cols-3 gap-x-2 border-t pt-1">
-              <span>WAVE {hud.wave ?? "—"}</span><span>TIDE {hud.tide ?? "—"}</span><span>QUOTA {hud.quota ?? "—"}</span>
-              <span>ENEMY {hud.enemySpawnCount}</span><span>ITEM {hud.itemSpawnCount}</span><span>KEY {keyStatus}</span>
-            </div>
-            {latestActiveSpawn && <div className="mt-1 truncate border-t pt-1">{latestActiveSpawn.kind === "enemy" ? "ENEMY" : "ITEM"} · {latestActiveSpawn.actor}</div>}
-            <div className="mt-1 flex items-center gap-2 border-t pt-1">
-              <Select value={selectedSessionId ?? undefined} onValueChange={onSelectSession} disabled={sessions.length === 0}>
-                <SelectTrigger className="h-8 min-w-0 flex-1 rounded-sm font-mono text-xs" aria-label="Replay session">
-                  <SelectValue placeholder="SELECT SESSION" />
-                </SelectTrigger>
-                <SelectContent>{sessions.map((session) => <SelectItem key={session.session_id} value={session.session_id}>
-                  {shortSessionId(session.session_id)} · {session.events}
-                </SelectItem>)}</SelectContent>
-              </Select>
-              <span className="shrink-0 text-muted-foreground">{selectedEvents.length} / {replayCount}</span>
-            </div>
-            <details className="mt-1 border-t pt-1">
-              <summary className="cursor-pointer text-muted-foreground">DETAILS</summary>
-              <div className="mt-1 grid grid-cols-2 gap-x-2">
-                <span>SEQUENCE {hud.sequence ?? "—"}</span><span>JOB {hud.jobType ?? "—"}</span>
-                {hud.host ? <>
-                  <span>SERVER {hud.host}</span>
-                  {hud.clients.map((client) => <span key={client.ip}>CLIENT {client.ip} {client.delay ? client.delay + "ms" : "—"}</span>)}
-                </> : <>
-                  <span>SOURCE {hud.source ?? "—"}</span><span>DEST {hud.destination ?? "—"}</span>
-                  <span>DELAY {hud.pairDelay ? hud.pairDelay + "ms" : "—"}</span>
-                </>}
-                <span>{persistence?.toUpperCase() ?? "CONNECTING"}</span>
-              </div>
-            </details>
-          </section>
-          <section className="pointer-events-auto hidden w-[min(390px,100%)] rounded-sm border bg-sidebar/90 p-3 font-mono text-xs shadow-none backdrop-blur-sm sm:block" aria-label="Replay HUD">
-            <div className="flex items-center justify-between gap-2">
-              <strong className="text-sm tracking-widest">REPLAY</strong>
-              <Badge variant="outline" className="rounded-sm">{persistence?.toUpperCase() ?? "CONNECTING"}</Badge>
-            </div>
-            <div className="mt-2 border-t pt-2">
-              <div className="text-muted-foreground">CAPTURE TIME</div>
-              <time className="block text-base font-semibold tabular-nums sm:text-lg">{captureClock} {firstLoaded ? "JST" : ""}</time>
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 border-t pt-2">
-              <div className="col-span-2 flex items-baseline justify-between gap-2">
-                <span className="text-muted-foreground">{hud.stageId ? "STAGE" : "SESSION STAGE"}</span>
-                <strong className="min-w-0 truncate text-right">{mapStage ?? "—"}</strong>
-              </div>
-              {hud.stageName && <div className="col-span-2 truncate text-muted-foreground">{hud.stageName}</div>}
-              <div><span className="text-muted-foreground">DIFFICULTY</span> <strong>{hud.difficulty ?? "—"}</strong></div>
-              <div><span className="text-muted-foreground">QUOTA</span> <strong>{hud.quota ?? "—"}</strong></div>
-              <div><span className="text-muted-foreground">SEQUENCE</span> <strong>{hud.sequence ?? "—"}</strong></div>
-              <div><span className="text-muted-foreground">JOB</span> <strong>{hud.jobType ?? "—"}</strong></div>
-              <div><span className="text-muted-foreground">WAVE</span> <strong>{hud.wave ?? "—"}</strong></div>
-              <div><span className="text-muted-foreground">TIDE</span> <strong>{hud.tide ?? "—"}</strong></div>
-            </div>
-            <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 border-t pt-2 text-muted-foreground">
-              <span>ENEMY SPAWN <strong className="text-foreground">{hud.enemySpawnCount}</strong></span>
-              <span>ITEM SPAWN <strong className="text-foreground">{hud.itemSpawnCount}</strong></span>
-              <span>KEY <strong className="text-foreground">{keyStatus}</strong></span>
-            </div>
-            {latestActiveSpawn && <div className="mt-1 truncate border-t pt-1 text-foreground">
-              {latestActiveSpawn.kind === "enemy" ? "ENEMY SPAWN" : "ITEM SPAWN"} · {latestActiveSpawn.actor}
-            </div>}
-            <div className="mt-2 border-t pt-2 text-muted-foreground">
-              {hud.host ? <>
-                <div className="flex justify-between gap-2"><span>SERVER</span><span className="text-foreground">{hud.host}</span></div>
-                {hud.clients.map((client) => <div key={client.ip} className="flex justify-between gap-2"><span>CLIENT</span><span className="text-foreground">{client.ip} · {client.delay ? client.delay + "ms" : "—"}</span></div>)}
-              </> : <>
-                <div className="flex justify-between gap-2"><span>SOURCE</span><span className="text-foreground">{hud.source ?? "—"}</span></div>
-                <div className="flex justify-between gap-2"><span>DEST</span><span className="text-foreground">{hud.destination ?? "—"}</span></div>
-                <div className="flex justify-between gap-2"><span>DELAY</span><span className="text-foreground">{hud.pairDelay ? hud.pairDelay + "ms" : "—"}</span></div>
-              </>}
-            </div>
-            <div className="mt-2 flex items-center gap-2 border-t pt-2">
-              <Select value={selectedSessionId ?? undefined} onValueChange={onSelectSession} disabled={sessions.length === 0}>
-                <SelectTrigger className="h-8 min-w-0 flex-1 rounded-sm font-mono text-xs" aria-label="Replay session">
-                  <SelectValue placeholder="SELECT SESSION" />
-                </SelectTrigger>
-                <SelectContent>{sessions.map((session) => <SelectItem key={session.session_id} value={session.session_id}>
-                  {shortSessionId(session.session_id)} · {session.events}
-                </SelectItem>)}</SelectContent>
-              </Select>
-              <span className="shrink-0 text-muted-foreground">{selectedEvents.length} / {replayCount}</span>
-            </div>
-          </section>
+          <ReplayHud
+            hud={hud} captureClock={captureClock} hasCapture={Boolean(firstLoaded)}
+            mapStage={mapStage} remainingSeconds={hud.remainingSeconds} keyStatus={keyStatus}
+            sessions={sessions} selectedSessionId={selectedSessionId}
+            selectedEventsCount={selectedEvents.length} replayCount={replayCount}
+            persistence={persistence} onSelectSession={onSelectSession}
+          />
 
           <section className="pointer-events-auto w-full rounded-sm border bg-sidebar/90 p-3 font-mono text-xs shadow-none backdrop-blur-sm" aria-label="Replay transport">
             {error && <div role="alert" className="mb-2 flex items-center justify-between gap-2 border-b pb-2 text-destructive">

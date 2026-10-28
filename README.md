@@ -17,6 +17,8 @@ bun run start
 
 `bun run dev` はビルド後に Hono を監視起動します。`bun run dev:app` は単独の Vite サーバーで、Hono と同じポートを使うため同時起動しません。
 
+Replay HUD は `thunder_api` の Splatoon 2 / Splatoon 1 フォントをローカルで利用できます。隣の `thunder_api/docs/mock-diff/assets/fonts/` にキャッシュがある場合は `bun tools/sync-hud-fonts.ts` を実行します。別の場所ならフォントディレクトリを引数で指定します。フォントは `app/public/local-fonts/` に置かれ、Git と配布ビルドには含まれず、起動中のローカル Hono から配信します。キャッシュがない環境では M PLUS 1 Code に切り替わります。
+
 ## 記録サンプル
 
 InkScope の `inspect` で PCAP を Visualizer に送ると、PostgreSQL にセッションが保存されます。そのセッションの一部分を初期表示にするには、Git 管理外の `.env.local` に次の二つを追加します。

@@ -1,7 +1,7 @@
 /// <reference types="bun" />
 import { describe, expect, it } from "bun:test"
 import { readdir } from "node:fs/promises"
-import { app, createApp, distDir, localTerrainPath, readSampleConfig } from "./app"
+import { app, createApp, distDir, localFontDir, localTerrainPath, readSampleConfig } from "./app"
 import type { PostgresPersistence } from "./postgres"
 import type { PacketEnvelope } from "./wire"
 import fixture from "./fixtures/packet-v1.json"
@@ -196,6 +196,28 @@ describe("Hono visualizer server", () => {
     expect(response.headers.get("content-type")).toContain("model/gltf-binary")
     expect(Number(response.headers.get("content-length"))).toBeGreaterThan(1_000_000)
     expect(await Bun.file(`${distDir}/maps/local/cop-shakedent.glb`).exists()).toBe(false)
+  })
+
+  it("serves only locally cached HUD fonts outside the build output", async () => {
+    for (const name of ["splatoon1-common.woff2", "splatoon2-common.woff2"]) {
+      expect(await Bun.file(`${distDir}/local-fonts/${name}`).exists()).toBe(false)
+      const font = Bun.file(`${localFontDir}/${name}`)
+      const head = await app.request(`http://localhost:10252/local-fonts/${name}`, { method: "HEAD" })
+      if (!(await font.exists())) {
+        expect(head.status).toBe(404)
+        continue
+      }
+      expect(head.status).toBe(200)
+      expect(head.headers.get("content-type")).toContain("font/woff2")
+      expect(head.headers.get("cache-control")).toContain("private")
+      expect(Number(head.headers.get("content-length"))).toBe(font.size)
+      const response = await app.request(`http://localhost:10252/local-fonts/${name}`)
+      expect(response.status).toBe(200)
+      expect((await response.arrayBuffer()).byteLength).toBe(font.size)
+    }
+    for (const name of ["unknown.woff2", "splat-fonts.css", "splatoon1-common.ttf", "..%2f.env.local"]) {
+      expect((await app.request(`http://localhost:10252/local-fonts/${name}`)).status).toBe(404)
+    }
   })
 
   it("keeps replay routes explicit when PostgreSQL is not configured", async () => {

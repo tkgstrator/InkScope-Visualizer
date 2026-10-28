@@ -10,9 +10,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
     {
-      name: "exclude-local-terrain-from-build",
+      name: "exclude-local-game-assets-from-build",
       async closeBundle() {
         await rm(resolve(import.meta.dirname, "dist/maps/local"), { recursive: true, force: true })
+        await rm(resolve(import.meta.dirname, "dist/local-fonts"), { recursive: true, force: true })
       },
     },
   ],
