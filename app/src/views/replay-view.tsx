@@ -1,4 +1,5 @@
-import { Pause, Play } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Pause, Play, RotateCcw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -20,27 +21,26 @@ export type ReplayViewProps = {
   selectedEvents: PacketEnvelope[]
   loading: boolean
   error: string | null
-  hasMore: boolean
-  hasPrevious?: boolean
-  pageNumber?: number
   pageStartIndex?: number
   onSelectSession: (sessionId: string) => void
-  onLoadMore: () => void
-  onLoadPrevious?: () => void
-  onJumpToStart?: () => void
   position: number
+  elapsedMs: number
+  durationMs: number
   playing: boolean
   onPositionChange: (position: number) => void
+  onElapsedChange: (elapsedMs: number) => void
   onPlayingChange: (playing: boolean) => void
+  onRestart: () => void
+  onRetry?: () => void
 }
 
 function captureTime(timestampNs: string): string {
   try {
     const millis = BigInt(timestampNs) / 1_000_000n
-    if (millis > BigInt(Number.MAX_SAFE_INTEGER)) return timestampNs
+    if (millis < 0n || millis > BigInt(Number.MAX_SAFE_INTEGER)) return timestampNs
     return new Intl.DateTimeFormat("ja-JP", {
       timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
-      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+      hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3, hour12: false,
     }).format(new Date(Number(millis)))
   } catch {
     return timestampNs
@@ -51,39 +51,53 @@ function shortSessionId(sessionId: string): string {
   return sessionId.slice(0, 8)
 }
 
-function captureRange(events: readonly PacketEnvelope[]): [string, string] | null {
-  if (events.length === 0) return null
-  let earliest = events[0]!.timestamp_ns
-  let latest = earliest
-  for (const event of events.slice(1)) {
-    if (BigInt(event.timestamp_ns) < BigInt(earliest)) earliest = event.timestamp_ns
-    if (BigInt(event.timestamp_ns) > BigInt(latest)) latest = event.timestamp_ns
-  }
-  return [earliest, latest]
+function formatElapsed(milliseconds: number): string {
+  const tenths = Math.floor(Math.max(0, milliseconds) / 100)
+  const seconds = Math.floor(tenths / 10)
+  return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}.${tenths % 10}`
 }
+
+const timelineRowHeight = 32
+const timelineViewportHeight = 320
+const timelineOverscan = 8
 
 export function ReplayView({
   source, persistence = null, sessions, selectedSessionId, selectedEvents, loading, error,
-  hasMore, hasPrevious = false, pageNumber = 1, pageStartIndex = 0,
-  onSelectSession, onLoadMore, onLoadPrevious, onJumpToStart, position, playing, onPositionChange, onPlayingChange,
+  pageStartIndex = 0, onSelectSession, position, elapsedMs, durationMs, playing,
+  onPositionChange, onElapsedChange, onPlayingChange, onRestart, onRetry,
 }: ReplayViewProps) {
   const replaySeconds = Math.floor(position * 1.2)
   const replayTime = `${String(Math.floor(replaySeconds / 60)).padStart(2, "0")}:${String(replaySeconds % 60).padStart(2, "0")}`
   const selectedSession = sessions.find((session) => session.session_id === selectedSessionId)
   const currentIndex = Math.min(Math.max(0, Math.floor(position)), Math.max(0, selectedEvents.length - 1))
   const currentEvent = selectedEvents[currentIndex]
-  const windowStart = Math.max(0, Math.min(currentIndex - 10, selectedEvents.length - 21))
-  const timeline = selectedEvents.slice(windowStart, windowStart + 21)
   const firstLoaded = selectedEvents[0]
   const lastLoaded = selectedEvents.at(-1)
-  const captureBounds = captureRange(selectedEvents)
-  const pageEnd = selectedEvents.length > 0 && currentIndex === selectedEvents.length - 1
-  const changePage = (direction: "previous" | "next") => {
-    onPlayingChange(false)
-    onPositionChange(0)
-    if (direction === "previous") onLoadPrevious?.()
-    else onLoadMore()
-  }
+  const timelineRef = useRef<HTMLDivElement>(null)
+  const [timelineScrollTop, setTimelineScrollTop] = useState(0)
+  const visibleStart = Math.max(0, Math.floor(timelineScrollTop / timelineRowHeight) - timelineOverscan)
+  const visibleEnd = Math.min(selectedEvents.length,
+    Math.ceil((timelineScrollTop + timelineViewportHeight) / timelineRowHeight) + timelineOverscan)
+  const timeline = selectedEvents.slice(visibleStart, visibleEnd)
+  const replayCount = selectedSession
+    ? (() => { try {
+      const count = BigInt(selectedSession.events) - BigInt(pageStartIndex)
+      return (count > 0n ? count : 0n).toString()
+    } catch { return selectedSession.events } })()
+    : "0"
+  const captureClock = firstLoaded
+    ? captureTime((BigInt(firstLoaded.timestamp_ns) + BigInt(Math.round(Math.max(0, elapsedMs) * 1_000_000))).toString())
+    : "—"
+
+  useEffect(() => {
+    const element = timelineRef.current
+    if (!element || selectedEvents.length === 0) return
+    const rowTop = currentIndex * timelineRowHeight
+    if (rowTop < element.scrollTop || rowTop + timelineRowHeight > element.scrollTop + timelineViewportHeight) {
+      element.scrollTop = Math.max(0, rowTop - Math.floor(timelineViewportHeight / 2))
+      setTimelineScrollTop(element.scrollTop)
+    }
+  }, [currentIndex, selectedEvents.length, selectedSessionId])
 
   if (source !== "demo") {
     return (
@@ -113,40 +127,56 @@ export function ReplayView({
               </div>
             </FlatCard>
             <FlatCard title={selectedSession ? `Session ${shortSessionId(selectedSession.session_id)}` : "Timeline"}
-              meta={selectedSession ? selectedEvents.length > 0 ? `${pageStartIndex + 1}–${pageStartIndex + selectedEvents.length} / ${selectedSession.events}` : `0 / ${selectedSession.events}` : "SELECT SESSION"} className="min-w-0">
-              {error && <div role="alert" className="mb-3 font-mono text-xs text-destructive">ERROR · {error}</div>}
+              meta={selectedSession ? loading ? `LOADING ${selectedEvents.length} / ${replayCount}` : error ? `LOADED ${selectedEvents.length} / ${replayCount}` : `${replayCount} EVENTS` : "SELECT SESSION"} className="min-w-0">
+              {error && <div role="alert" className="mb-3 flex items-center justify-between gap-3 font-mono text-xs text-destructive">
+                <span>ERROR · {error}</span>
+                {onRetry && <Button variant="outline" className="rounded-sm" onClick={onRetry}>Retry</Button>}
+              </div>}
               {selectedSession && <>
-                <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-muted-foreground">
-                  <span>PAGE {pageNumber}</span>
-                  {firstLoaded && lastLoaded && <>
-                    <span>RECORDS #{firstLoaded.record}–#{lastLoaded.record}</span>
-                    {captureBounds && <span>CAPTURE RANGE {captureTime(captureBounds[0])}–{captureTime(captureBounds[1])}</span>}
-                  </>}
+                <div className="mb-3 flex flex-wrap items-end justify-between gap-2 font-mono text-xs">
+                  <div>
+                    <div className="text-muted-foreground">CAPTURE TIME</div>
+                    <time className="font-semibold tabular-nums">{captureClock} {firstLoaded ? "JST" : ""}</time>
+                  </div>
+                  <span className="tabular-nums text-muted-foreground">{currentEvent ? `#${currentEvent.record}` : "—"} / {lastLoaded ? `#${lastLoaded.record}` : "—"}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button variant="outline" size="icon" className="rounded-sm" aria-label={playing ? "Pause replay" : "Play replay"}
-                    disabled={selectedEvents.length === 0 && !playing} onClick={() => onPlayingChange(!playing)}>
+                  <Button variant="outline" className="rounded-sm" aria-label={playing ? "Pause replay" : "Play replay"}
+                    disabled={loading || error !== null || selectedEvents.length < 2 || durationMs <= 0} onClick={() => onPlayingChange(!playing)}>
                     {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+                    {playing ? "Pause" : "Play"}
                   </Button>
-                  <span className="w-20 shrink-0 font-mono text-xs">{currentEvent ? `#${currentEvent.record}` : "—"}</span>
-                  <Slider aria-label="Replay position" className="flex-1" value={[currentIndex]}
-                    max={Math.max(1, selectedEvents.length - 1)} step={1} disabled={selectedEvents.length < 2}
-                    onValueChange={(values) => onPositionChange(values[0] ?? 0)} />
-                  <span className="shrink-0 font-mono text-xs text-muted-foreground">{selectedEvents.length === 0 ? 0 : currentIndex + 1}/{selectedEvents.length}</span>
+                  <Button variant="outline" className="rounded-sm" aria-label="Restart replay"
+                    disabled={loading || selectedEvents.length === 0} onClick={onRestart}>
+                    <RotateCcw className="size-4" />
+                    Restart
+                  </Button>
+                  <div className="min-w-0 flex-1">
+                    <Slider aria-label="Replay time" className="w-full" value={[elapsedMs >= durationMs ? Math.ceil(durationMs) : Math.max(0, Math.round(elapsedMs))]}
+                      max={Math.max(1, Math.ceil(durationMs))} step={1} disabled={loading || error !== null || selectedEvents.length < 2 || durationMs <= 0}
+                      onValueChange={(values) => onElapsedChange(Math.min(durationMs, values[0] ?? 0))} />
+                    <div className="mt-2 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                      {formatElapsed(elapsedMs)} / {formatElapsed(durationMs)}
+                    </div>
+                  </div>
                 </div>
                 <div className="mt-4 grid gap-4 border-t pt-4 lg:grid-cols-[minmax(180px,.6fr)_minmax(0,1fr)]">
-                  <div className="max-h-[320px] divide-y overflow-y-auto" aria-label="Recorded event timeline">
+                  <div ref={timelineRef} className="h-80 overflow-y-auto border-r" aria-label="Recorded event timeline"
+                    onScroll={(event) => setTimelineScrollTop(event.currentTarget.scrollTop)}>
+                    <div className="relative" style={{ height: selectedEvents.length * timelineRowHeight }}>
                     {timeline.map((event, offset) => {
-                      const index = windowStart + offset
-                      const firstRow = event.rows[0]
+                      const index = visibleStart + offset
+                      const decodedRow = event.rows.at(-1)
                       return <button key={`${event.session_id}:${event.record}`} type="button" aria-current={index === currentIndex ? "true" : undefined}
-                        className={`flex w-full items-center gap-2 px-1 py-2 text-left font-mono text-xs hover:bg-muted/30 ${index === currentIndex ? "bg-muted/30" : ""}`}
+                        style={{ top: index * timelineRowHeight, height: timelineRowHeight }}
+                        className={`absolute left-0 flex w-full items-center gap-2 border-b px-1 text-left font-mono text-xs hover:bg-muted/30 ${index === currentIndex ? "bg-muted/30" : ""}`}
                         onClick={() => onPositionChange(index)}>
                         <span className="w-14 shrink-0 text-muted-foreground">#{event.record}</span>
-                        <span className="min-w-0 flex-1 truncate">{firstRow?.kind ?? "UDP"}</span>
-                        <span className="truncate text-muted-foreground">{firstRow?.status ?? "RAW"}</span>
+                        <span className="min-w-0 flex-1 truncate">{decodedRow?.kind ?? "UDP"}</span>
+                        <span className="truncate text-muted-foreground">{decodedRow?.status ?? "RAW"}</span>
                       </button>
                     })}
+                    </div>
                     {selectedEvents.length === 0 && <div className="py-2 font-mono text-xs text-muted-foreground">{loading ? "LOADING" : "NO EVENTS"}</div>}
                   </div>
                   <div className="min-w-0 space-y-2 font-mono text-xs">
@@ -167,12 +197,8 @@ export function ReplayView({
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3 font-mono text-xs text-muted-foreground">
-                  <span>{loading ? "LOADING" : pageEnd ? hasMore ? "PAGE END · NEXT PAGE" : "SESSION END" : `${selectedEvents.length} ON PAGE`}</span>
-                  <div className="flex gap-2">
-                    {pageStartIndex > 0 && onJumpToStart && <Button variant="outline" className="rounded-sm" disabled={loading} onClick={() => { onPlayingChange(false); onPositionChange(0); onJumpToStart() }}>Session start</Button>}
-                    {hasPrevious && <Button variant="outline" className="rounded-sm" disabled={loading} onClick={() => changePage("previous")}>Previous page</Button>}
-                    {hasMore && <Button variant="outline" className="rounded-sm" disabled={loading} onClick={() => changePage("next")}>Next page</Button>}
-                  </div>
+                  <span>{loading ? `LOADING ${selectedEvents.length} / ${replayCount}` : error ? "LOAD INCOMPLETE" : playing ? "PLAYING" : elapsedMs >= durationMs && selectedEvents.length > 0 ? "SESSION END" : "PAUSED"}</span>
+                  {firstLoaded && lastLoaded && <span>RECORDS #{firstLoaded.record}–#{lastLoaded.record}</span>}
                 </div>
               </>}
               {!selectedSession && <div className="font-mono text-xs text-muted-foreground">SELECT SESSION</div>}

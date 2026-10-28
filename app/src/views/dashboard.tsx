@@ -10,7 +10,8 @@ import { type Filter } from "@/components/dashboard/packet-list"
 import { SessionStatus } from "@/components/dashboard/session-status"
 import { StageMap } from "@/components/dashboard/stage-map"
 import { useLiveFeed, useOverlayFeed } from "@/lib/live-feed"
-import { replayDelayMs, useReplayArchive } from "@/lib/replay-archive"
+import { useReplayArchive } from "@/lib/replay-archive"
+import { replayIndexAtMs, replayOffsetsMs } from "@/lib/replay-clock"
 import { livePacketRows, packetRowsForEvents } from "@/lib/packet-view"
 import { useRecordedSample } from "@/lib/recorded-sample"
 import { emptySessionObservation, foldObservationSnapshot } from "@/lib/session-observation"
@@ -53,9 +54,11 @@ export function Dashboard() {
   const [clock, setClock] = useState(demoTime())
   const [wave, setWave] = useState(2)
   const [replayPosition, setReplayPosition] = useState(() => requestedSource === "demo" ? 45 : 0)
+  const [replayElapsedMs, setReplayElapsedMs] = useState(0)
   const [replayPlaying, setReplayPlaying] = useState(false)
   const [verticalNav, setVerticalNav] = useState(() => window.matchMedia("(min-width: 1280px)").matches)
   const nextRecord = useRef(488)
+  const replayAnchor = useRef({ wall: 0, media: 0 })
   const searchRef = useRef<HTMLInputElement>(null)
   const liveFeed = useLiveFeed(source === "live" && !overlayMode)
   const overlayFeed = useOverlayFeed(source === "live" && overlayMode)
@@ -75,6 +78,8 @@ export function Dashboard() {
     source === "recorded" ? recordedSample.afterRecord : null,
     source === "recorded" ? recordedSample.startIndex ?? 0 : 0,
   )
+  const replayOffsets = useMemo(() => replayOffsetsMs(replayArchive.selectedEvents), [replayArchive.selectedEvents])
+  const replayDurationMs = replayOffsets.at(-1) ?? 0
   const activePackets = source === "demo" ? packets : source === "live" ? livePackets : recordedPackets
   const observation = source === "recorded" ? recordedObservation : liveFeed.observation
   const visibleEvents = source === "recorded" ? recordedEvents : liveFeed.events
@@ -87,6 +92,7 @@ export function Dashboard() {
     setSelectedId("")
     setRecordedPage(0)
     setReplayPosition(next === "demo" ? 45 : 0)
+    setReplayElapsedMs(0)
     setReplayPlaying(false)
   }
   const reportControlState = useCallback((keyState: "absent" | "pending" | "applied" | null, keyLocked: boolean) => {
@@ -154,32 +160,48 @@ export function Dashboard() {
       const timer = window.setTimeout(() => setReplayPosition((current) => current + 1), 250)
       return () => window.clearTimeout(timer)
     }
-    if (replayArchive.loading) return
-    const events = replayArchive.selectedEvents
-    if (replayArchive.error || events.length === 0) {
+    if (view !== "replay" || replayArchive.loading || replayArchive.error || replayOffsets.length === 0 || replayDurationMs <= 0) {
       setReplayPlaying(false)
       return
     }
-    if (replayPosition >= events.length - 1) {
-      if (!replayArchive.hasMore) { setReplayPlaying(false); return }
-      const lastEvent = events.at(-1)!
-      const delay = replayArchive.nextEvent ? replayDelayMs([lastEvent, replayArchive.nextEvent], 0) ?? 50 : 50
-      const timer = window.setTimeout(() => {
-        setReplayPosition(0)
-        replayArchive.loadMore()
-      }, delay)
-      return () => window.clearTimeout(timer)
+    replayAnchor.current = { wall: performance.now(), media: replayElapsedMs }
+    const frame = { id: 0 }
+    const advance = () => {
+      const { wall, media } = replayAnchor.current
+      const elapsed = Math.min(replayDurationMs, media + performance.now() - wall)
+      setReplayElapsedMs(elapsed)
+      setReplayPosition(replayIndexAtMs(replayOffsets, elapsed))
+      if (elapsed >= replayDurationMs) setReplayPlaying(false)
+      else frame.id = window.requestAnimationFrame(advance)
     }
-    const delay = replayDelayMs(events, replayPosition)
-    if (delay === null) { setReplayPlaying(false); return }
-    const timer = window.setTimeout(() => setReplayPosition((current) => current + 1), delay)
-    return () => window.clearTimeout(timer)
-  }, [replayPlaying, replayPosition, source, replayArchive.selectedEvents, replayArchive.loading,
-    replayArchive.error, replayArchive.hasMore, replayArchive.nextEvent, replayArchive.loadMore])
+    frame.id = window.requestAnimationFrame(advance)
+    return () => window.cancelAnimationFrame(frame.id)
+  }, [replayPlaying, source, view, replayArchive.loading, replayArchive.error, replayOffsets, replayDurationMs])
+
+  const seekReplayTime = (elapsedMs: number) => {
+    const elapsed = Math.max(0, Math.min(elapsedMs, replayDurationMs))
+    setReplayElapsedMs(elapsed)
+    setReplayPosition(replayIndexAtMs(replayOffsets, elapsed))
+    replayAnchor.current = { wall: performance.now(), media: elapsed }
+  }
+
+  const seekReplayPosition = (position: number) => {
+    const index = Math.max(0, Math.min(position, replayOffsets.length - 1))
+    const elapsed = replayOffsets[index] ?? 0
+    setReplayPosition(index)
+    setReplayElapsedMs(elapsed)
+    replayAnchor.current = { wall: performance.now(), media: elapsed }
+  }
+
+  const changeReplayPlaying = (playing: boolean) => {
+    if (playing && source !== "demo" && replayElapsedMs >= replayDurationMs) seekReplayTime(0)
+    setReplayPlaying(playing)
+  }
 
   const selectReplaySession = (sessionId: string) => {
     replayArchive.selectSession(sessionId)
     setReplayPosition(0)
+    setReplayElapsedMs(0)
     setReplayPlaying(false)
   }
 
@@ -247,7 +269,7 @@ export function Dashboard() {
           <Button size="icon" variant="ghost" className="rounded-sm sm:w-auto sm:px-3" aria-label="Switch to recorded sample" aria-pressed={source === "recorded"} onClick={() => chooseSource("recorded")}><Database className="size-3.5" /><span className="hidden sm:inline">RECORDED</span></Button>
           <Button size="icon" variant="ghost" className="rounded-sm sm:w-auto sm:px-3" aria-label="Switch to live feed" aria-pressed={source === "live"} onClick={() => chooseSource("live")}><Radio className="size-3.5" /><span className="hidden sm:inline">LIVE</span></Button>
           <Button size="icon" variant="ghost" className="rounded-sm sm:w-auto sm:px-3" aria-label="Switch to demo feed" aria-pressed={source === "demo"} onClick={() => chooseSource("demo")}><Play className="size-3.5" /><span className="hidden sm:inline">DEMO</span></Button>
-          <Badge variant="outline" className="hidden rounded-sm font-mono text-xs sm:inline-flex">{source === "demo" ? sampleFallback ? "SYNTHETIC · NO SAMPLE" : "SYNTHETIC DEMO" : source === "live" ? `LIVE ${liveFeed.connection.toUpperCase()}` : recordedSample.status === "ready" ? `RECORDED #${recordedEvents[0]?.record}–#${recordedEvents.at(-1)?.record}` : `RECORDED ${recordedSample.status.toUpperCase()}`}</Badge>
+          <Badge variant="outline" className="hidden rounded-sm font-mono text-xs sm:inline-flex">{source === "demo" ? sampleFallback ? "SYNTHETIC · NO SAMPLE" : "SYNTHETIC DEMO" : source === "live" ? `LIVE ${liveFeed.connection.toUpperCase()}` : view === "replay" && replayArchive.selectedEvents.length > 0 ? `REPLAY #${replayArchive.selectedEvents[replayPosition]?.record ?? "—"} / #${replayArchive.selectedEvents.at(-1)?.record}` : recordedSample.status === "ready" ? `RECORDED #${recordedEvents[0]?.record}–#${recordedEvents.at(-1)?.record}` : `RECORDED ${recordedSample.status.toUpperCase()}`}</Badge>
           <Separator orientation="vertical" className="hidden h-5 sm:block" />
           <span className="hidden font-mono text-xs text-muted-foreground sm:block">{clock} JST</span>
         </div>
@@ -298,7 +320,7 @@ export function Dashboard() {
               </TabsContent>
 
               <TabsContent value="replay">
-                <ReplayView source={source} persistence={source === "recorded" ? recordedSample.status === "ready" ? "postgres" : null : liveFeed.persistence} sessions={replayArchive.sessions} selectedSessionId={replayArchive.selectedSessionId} selectedEvents={replayArchive.selectedEvents} loading={replayArchive.loading} error={replayArchive.error} hasMore={replayArchive.hasMore} hasPrevious={replayArchive.hasPrevious} pageNumber={replayArchive.pageNumber} pageStartIndex={replayArchive.pageStartIndex} onSelectSession={selectReplaySession} onLoadMore={replayArchive.loadMore} onLoadPrevious={replayArchive.loadPrevious} onJumpToStart={replayArchive.jumpToStart} position={replayPosition} playing={replayPlaying} onPositionChange={setReplayPosition} onPlayingChange={setReplayPlaying} />
+                <ReplayView source={source} persistence={source === "recorded" ? recordedSample.status === "ready" ? "postgres" : null : liveFeed.persistence} sessions={replayArchive.sessions} selectedSessionId={replayArchive.selectedSessionId} selectedEvents={replayArchive.selectedEvents} loading={replayArchive.loading} error={replayArchive.error} pageStartIndex={replayArchive.startIndex} onSelectSession={selectReplaySession} onRetry={replayArchive.retry} position={replayPosition} elapsedMs={replayElapsedMs} durationMs={replayDurationMs} playing={replayPlaying} onPositionChange={source === "demo" ? setReplayPosition : seekReplayPosition} onElapsedChange={seekReplayTime} onPlayingChange={changeReplayPlaying} onRestart={() => { setReplayElapsedMs(0); setReplayPosition(0); setReplayPlaying(false) }} />
               </TabsContent>
 
               <TabsContent value="obs">

@@ -26,7 +26,7 @@ INKSCOPE_SAMPLE_SESSION_ID=<保存済みセッションの UUID>
 INKSCOPE_SAMPLE_AFTER_RECORD=<表示開始直前のレコード番号>
 ```
 
-RECORDED は指定した位置から最大 1,200 パケットを読みます。Debug と Raw はその範囲を 80 パケットずつ移動できます。Replay は同じセッションの指定位置から始まり、`Session start` で先頭へ戻れます。保存済みデータだけを表示し、LIVE の WebSocket とは別です。設定がなければ合成 DEMO に切り替わります。`?source=demo` と `?source=live` で表示モードを直接指定できます。サンプルの読み込み失敗やレコード欠損は RECORDED のエラー・空状態として表示します。PCAP、鍵、実パケットの JSON はリポジトリに追加しません。
+RECORDED の初期表示は指定した位置から最大 1,200 パケットを読みます。Debug と Raw はその範囲を 80 パケットずつ移動できます。Replay は同じセッションの指定位置から保存済みイベントを全件読み込み、記録時刻に合わせて連続再生します。プログレスバーは記録時間を表し、Restart は指定した開始位置に戻ります。保存済みデータだけを表示し、LIVE の WebSocket とは別です。設定がなければ合成 DEMO に切り替わります。`?source=demo` と `?source=live` で表示モードを直接指定できます。サンプルの読み込み失敗やレコード欠損は RECORDED のエラー・空状態として表示します。PCAP、鍵、実パケットの JSON はリポジトリに追加しません。
 
 ```sh
 bun run test

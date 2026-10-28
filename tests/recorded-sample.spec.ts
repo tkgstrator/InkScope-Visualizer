@@ -81,7 +81,10 @@ test("Debug can page through the entire recorded sample window", async ({ page }
 
 test("recorded Replay starts at the configured OnlineCoopSetting window", async ({ page }) => {
   const newerSession = "a61c1c49-4dae-4c6f-aa41-4f7f2a44411e"
-  const events = Array.from({ length: 100 }, (_, index) => ({ ...packet, record: String(101 + index) }))
+  const events = Array.from({ length: 100 }, (_, index) => ({
+    ...packet, record: String(101 + index),
+    rows: index === 0 ? recordedEvents[0]!.rows : packet.rows,
+  }))
   await page.route("**/api/sample", (route) => route.fulfill({ json: {
     version: 1, state: "ready", session_id: sessionId, after_record: "100", start_index: 100, events,
   } }))
@@ -99,73 +102,76 @@ test("recorded Replay starts at the configured OnlineCoopSetting window", async 
     } })
   })
   await page.goto("/")
+  await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true")
   await page.getByRole("tab", { name: "Replay" }).click()
   await expect(page.getByRole("button", { name: `Session ${sessionId}` })).toHaveAttribute("aria-pressed", "true")
-  await expect(page.getByText("101–200 / 200")).toBeVisible()
+  await expect(page.getByText("100 EVENTS", { exact: true })).toBeVisible()
   await expect(page.getByText("RECORDS #101–#200")).toBeVisible()
-  await page.getByRole("button", { name: "Session start" }).click()
-  await expect(page.getByText("1–100 / 200")).toBeVisible()
+  await expect(page.getByText("OnlineCoopSetting").first()).toBeVisible()
+  await expect(page.getByRole("button", { name: /Next page|Previous page|Session start/ })).toHaveCount(0)
+  await page.getByRole("button", { name: "Restart replay" }).click()
+  await expect(page.getByText("#101 / #200")).toHaveCount(2)
 })
 
-test("recorded Replay plays past the first page and stops at the session end", async ({ page }) => {
-  const firstPage = Array.from({ length: 100 }, (_, index) => ({
-    ...recordedEvents[index % recordedEvents.length], record: String(index + 3),
-  }))
-  const secondPage = [
-    { ...recordedEvents[1], record: "103" },
-    { ...recordedEvents[2], record: "104" },
-  ]
-  let releaseSecondPage: () => void = () => {}
-  const secondPageGate = new Promise<void>((resolve) => { releaseSecondPage = resolve })
-  let secondPageRequested: () => void = () => {}
-  const secondPageRequest = new Promise<void>((resolve) => { secondPageRequested = resolve })
+test("recorded Replay loads one timeline and plays on the capture clock", async ({ page }) => {
+  const baseTime = BigInt(packet.timestamp_ns)
+  const eventAt = (record: number) => ({
+    ...recordedEvents[(record - 3) % recordedEvents.length],
+    record: String(record),
+    timestamp_ns: String(baseTime + BigInt(record - 3) * 1_000_000n),
+  })
+  const firstBatch = Array.from({ length: 500 }, (_, index) => eventAt(index + 3))
+  const tail = [eventAt(503), eventAt(504)]
+  const secondPageGate = { release: () => {} }
+  const waiting = new Promise<void>((resolve) => { secondPageGate.release = resolve })
+  const requested = { resolve: () => {} }
+  const secondRequest = new Promise<void>((resolve) => { requested.resolve = resolve })
   const cursors: string[] = []
   await page.route("**/api/sample", (route) => route.fulfill({ json: {
-    version: 1, state: "ready", session_id: sessionId, after_record: "2", start_index: 2, events: [...firstPage, ...secondPage],
+    version: 1, state: "ready", session_id: sessionId, after_record: "2", start_index: 2, events: [firstBatch[0]],
   } }))
   await page.route("**/api/sessions**", (route) => route.fulfill({ json: { version: 1, sessions: [
-    { session_id: sessionId, events: "104", first_timestamp_ns: packet.timestamp_ns, last_timestamp_ns: packet.timestamp_ns },
+    { session_id: sessionId, events: "504", first_timestamp_ns: firstBatch[0]!.timestamp_ns, last_timestamp_ns: tail[1]!.timestamp_ns },
   ] } }))
   await page.route(/\/api\/sessions\/[^/]+\/events\?/, async (route) => {
     const cursor = new URL(route.request().url()).searchParams.get("after_record") ?? ""
     cursors.push(cursor)
-    if (cursor === "102") {
-      secondPageRequested()
-      await secondPageGate
+    if (cursor === "502") {
+      requested.resolve()
+      await waiting
     }
-    await route.fulfill({ json: { version: 1, session_id: sessionId, events: cursor === "2" ? [...firstPage, secondPage[0]] : secondPage } })
+    await route.fulfill({ json: { version: 1, session_id: sessionId, events: cursor === "2" ? firstBatch : tail } })
   })
 
   await page.goto("/")
   await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true")
   await page.getByRole("tab", { name: "Replay" }).click()
-  await expect(page.getByText("RECORDS #3–#102")).toBeVisible()
+  await secondRequest
+  await expect(page.getByText("LOADING 500 / 502").first()).toBeVisible()
+  secondPageGate.release()
+  await expect(page.getByText("RECORDS #3–#504")).toBeVisible()
+  await expect(page.getByText("502 EVENTS", { exact: true })).toBeVisible()
   await expect(page.getByText("OnlineCoopSetting").first()).toBeVisible()
-  const slider = page.locator('[data-slot="slider-thumb"]').first()
-  await slider.focus()
-  await slider.press("End")
+  await expect(page.getByRole("button", { name: /Next page|Previous page|Session start/ })).toHaveCount(0)
+  const slider = page.getByRole("slider", { name: "Replay time" })
+  await expect(slider).toHaveAttribute("aria-valuenow", "0")
   await page.getByRole("button", { name: "Play replay" }).click()
-  await secondPageRequest
-  await expect(page.getByRole("button", { name: "Pause replay" })).toBeEnabled()
-  releaseSecondPage()
-  await expect(page.getByText("RECORDS #103–#104")).toBeVisible()
+  await expect.poll(async () => Number(await slider.getAttribute("aria-valuenow"))).toBeGreaterThan(0)
   await expect(page.getByText("SESSION END")).toBeVisible()
-  await expect(page.getByRole("button", { name: "Play replay" })).toBeVisible()
-  expect(cursors).toEqual(["2", "102"])
+  await expect(page.getByText("#504 / #504")).toHaveCount(2)
+  expect(cursors).toEqual(["2", "502"])
 })
 
 test("a manual Replay selection wins over a pending preferred-session refresh", async ({ page }) => {
   const otherSession = "a61c1c49-4dae-4c6f-aa41-4f7f2a44411e"
-  let holdNext = false
-  let markHeld: () => void = () => {}
-  let release: () => void = () => {}
-  const held = new Promise<void>((resolve) => { markHeld = resolve })
-  const gate = new Promise<void>((resolve) => { release = resolve })
+  const control = { holdNext: false, markHeld: () => {}, release: () => {} }
+  const held = new Promise<void>((resolve) => { control.markHeld = resolve })
+  const gate = new Promise<void>((resolve) => { control.release = resolve })
   await page.route("**/api/sample", (route) => route.fulfill({ json: {
     version: 1, state: "ready", session_id: sessionId, after_record: "0", start_index: 0, events: recordedEvents,
   } }))
   await page.route("**/api/sessions**", async (route) => {
-    if (holdNext) { holdNext = false; markHeld(); await gate }
+    if (control.holdNext) { control.holdNext = false; control.markHeld(); await gate }
     try { await route.fulfill({ json: { version: 1, sessions: [
       { session_id: sessionId, events: "3", first_timestamp_ns: packet.timestamp_ns, last_timestamp_ns: packet.timestamp_ns },
       { session_id: otherSession, events: "1", first_timestamp_ns: packet.timestamp_ns, last_timestamp_ns: packet.timestamp_ns },
@@ -180,10 +186,39 @@ test("a manual Replay selection wins over a pending preferred-session refresh", 
   await page.getByRole("button", { name: `Session ${otherSession}` }).click()
   await expect(page.getByRole("button", { name: `Session ${otherSession}` })).toHaveAttribute("aria-pressed", "true")
   await page.getByRole("tab", { name: "Debug" }).click()
-  holdNext = true
+  control.holdNext = true
   await page.getByRole("tab", { name: "Replay" }).click()
   await held
   await page.getByRole("button", { name: `Session ${otherSession}` }).click()
-  release()
+  control.release()
   await expect(page.getByRole("button", { name: `Session ${otherSession}` })).toHaveAttribute("aria-pressed", "true")
+})
+
+test("Retry keeps a manually selected session", async ({ page }) => {
+  const otherSession = "a61c1c49-4dae-4c6f-aa41-4f7f2a44411e"
+  const control = { failOther: true }
+  await page.route("**/api/sample", (route) => route.fulfill({ json: {
+    version: 1, state: "ready", session_id: sessionId, after_record: "0", start_index: 0, events: recordedEvents,
+  } }))
+  await page.route("**/api/sessions**", (route) => route.fulfill({ json: { version: 1, sessions: [
+    { session_id: sessionId, events: "3", first_timestamp_ns: packet.timestamp_ns, last_timestamp_ns: packet.timestamp_ns },
+    { session_id: otherSession, events: "1", first_timestamp_ns: packet.timestamp_ns, last_timestamp_ns: packet.timestamp_ns },
+  ] } }))
+  await page.route(/\/api\/sessions\/[^/]+\/events\?/, (route) => {
+    const other = route.request().url().includes(otherSession)
+    if (other && control.failOther) {
+      control.failOther = false
+      return route.fulfill({ status: 503, json: { error: "temporary" } })
+    }
+    return route.fulfill({ json: { version: 1, events: other
+      ? [{ ...packet, session_id: otherSession, record: "7" }] : recordedEvents } })
+  })
+
+  await page.goto("/")
+  await page.getByRole("tab", { name: "Replay" }).click()
+  await page.getByRole("button", { name: `Session ${otherSession}` }).click()
+  await expect(page.getByRole("alert")).toContainText("HTTP 503")
+  await page.getByRole("button", { name: "Retry" }).click()
+  await expect(page.getByRole("button", { name: `Session ${otherSession}` })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByText("RECORDS #7–#7")).toBeVisible()
 })

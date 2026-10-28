@@ -51,7 +51,7 @@ queue, and slow browser clients are disconnected.
 | `WS /api/overlay` | Read-only OBS stream. Sends `hello`, reduced `snapshot`, `summary`, and `gap`; no raw bytes or decoded fields. |
 | `WS /api/ingest` | Native InkScope publisher. Requires the bearer token. |
 | `GET /api/sessions` | Saved session summaries when PostgreSQL is configured; `include_session_id=<UUID>` keeps a selected older session in the list. |
-| `GET /api/sessions/:id/events?after_record=...&limit=100` | Ordered saved packets; maximum page size 500. |
+| `GET /api/sessions/:id/events?after_record=...&limit=500` | Ordered saved packets; maximum batch size 500. |
 | `GET /api/sample` | The locally configured recorded sample window, at most 1,200 packets, or an explicit unavailable/empty state. |
 
 Browser WebSockets with a foreign `Origin` are rejected before upgrade. A
