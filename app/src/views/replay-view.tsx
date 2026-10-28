@@ -3,6 +3,7 @@ import { Pause, Play, RotateCcw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FlatCard } from "@/components/dashboard/flat-card"
 import { ReplayHud } from "./replay-hud"
 import { StageMap } from "@/components/dashboard/stage-map"
@@ -40,21 +41,6 @@ export type ReplayViewProps = {
   hud: ReplayGameSnapshot
   activeSpawns: ReplaySpawn[]
   keyStatus?: string
-}
-
-const captureFormatter = new Intl.DateTimeFormat("ja-JP", {
-  timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
-  hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3, hour12: false,
-})
-
-function captureTime(timestampNs: string): string {
-  try {
-    const millis = BigInt(timestampNs) / 1_000_000n
-    if (millis < 0n || millis > BigInt(Number.MAX_SAFE_INTEGER)) return timestampNs
-    return captureFormatter.format(new Date(Number(millis)))
-  } catch {
-    return timestampNs
-  }
 }
 
 function formatElapsed(milliseconds: number): string {
@@ -101,10 +87,6 @@ export function ReplayView({
       return (count > 0n ? count : 0n).toString()
     } catch { return selectedSession.events } })()
     : "0"
-  const captureClock = firstLoaded
-    ? captureTime((BigInt(firstLoaded.timestamp_ns) + BigInt(Math.round(Math.max(0, elapsedMs) * 1_000_000))).toString())
-    : "—"
-
   useEffect(() => {
     sliderStartMs.current = null
   }, [selectedSessionId])
@@ -131,11 +113,8 @@ export function ReplayView({
 
         <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between gap-3 p-3 sm:p-4">
           <ReplayHud
-            hud={hud} captureClock={captureClock} hasCapture={Boolean(firstLoaded)}
-            mapStage={mapStage} remainingSeconds={hud.remainingSeconds} keyStatus={keyStatus}
-            sessions={sessions} selectedSessionId={selectedSessionId}
-            selectedEventsCount={selectedEvents.length} replayCount={replayCount}
-            persistence={persistence} onSelectSession={onSelectSession}
+            hud={hud} mapStage={mapStage} remainingSeconds={hud.remainingSeconds}
+            keyStatus={keyStatus} persistence={persistence}
           />
 
           <section className="pointer-events-auto w-full rounded-sm border bg-sidebar/90 p-3 font-mono text-xs shadow-none backdrop-blur-sm" aria-label="Replay transport">
@@ -172,6 +151,17 @@ export function ReplayView({
                 <div className="mt-1 text-right tabular-nums text-muted-foreground">{formatElapsed(elapsedMs)} / {formatElapsed(durationMs)}</div>
               </div>
             </div>
+            <div className="mt-2 flex min-w-0 items-center gap-2 border-t pt-2 text-muted-foreground">
+              <Select value={selectedSessionId ?? undefined} onValueChange={onSelectSession} disabled={sessions.length === 0}>
+                <SelectTrigger className="h-8 min-w-0 flex-1 rounded-sm font-mono text-xs sm:max-w-[280px]" aria-label="Replay session">
+                  <SelectValue placeholder="SELECT SESSION" />
+                </SelectTrigger>
+                <SelectContent>{sessions.map((session) => <SelectItem key={session.session_id} value={session.session_id}>
+                  {session.session_id.slice(0, 8)} · {session.events}
+                </SelectItem>)}</SelectContent>
+              </Select>
+              <span className="shrink-0 tabular-nums" aria-label={`${selectedEvents.length} of ${replayCount} replay events loaded`}>{selectedEvents.length} / {replayCount}</span>
+            </div>
             <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-muted-foreground">
               <span>{currentEvent ? "#" + currentEvent.record : "—"} / {lastLoaded ? "#" + lastLoaded.record : "—"}</span>
               <span>{loading ? "LOADING " + selectedEvents.length + " / " + replayCount : error ? "LOAD INCOMPLETE" : playing ? "PLAYING" : elapsedMs >= durationMs && selectedEvents.length > 0 ? "SESSION END" : "PAUSED"}</span>
@@ -204,7 +194,6 @@ export function ReplayView({
                 </div>
                 <div className="min-w-0 max-h-60 space-y-2 overflow-y-auto lg:max-h-80">
                   {currentEvent && <>
-                    <div className="flex justify-between gap-3"><span className="text-muted-foreground">CAPTURED</span><span className="text-right">{captureTime(currentEvent.timestamp_ns)}</span></div>
                     <div className="flex justify-between gap-3"><span className="text-muted-foreground">SOURCE</span><span className="break-all text-right">{currentEvent.packet.source_ip}:{currentEvent.packet.source_port}</span></div>
                     <div className="flex justify-between gap-3"><span className="text-muted-foreground">DEST</span><span className="break-all text-right">{currentEvent.packet.destination_ip}:{currentEvent.packet.destination_port}</span></div>
                     <div className="flex justify-between gap-3"><span className="text-muted-foreground">PAYLOAD</span><span>{currentEvent.packet.payload_hex.length / 2} B</span></div>
