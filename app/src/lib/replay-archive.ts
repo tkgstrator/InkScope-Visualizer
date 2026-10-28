@@ -42,6 +42,7 @@ export function useReplayArchive(
   const [sessions, setSessions] = useState<ReplaySession[]>([])
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
   const [selectedEvents, setSelectedEvents] = useState<PacketEnvelope[]>([])
+  const [nextEvent, setNextEvent] = useState<PacketEnvelope | null>(null)
   const [cursor, setCursor] = useState<PageCursor>({ afterRecord: null, startIndex: 0 })
   const [previousPages, setPreviousPages] = useState<PageCursor[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(false)
@@ -77,12 +78,14 @@ export function useReplayArchive(
         if (preferredSessionId && !data.sessions.some((session) => session.session_id === preferredSessionId)) {
           setSelectedSessionId(null)
           setSelectedEvents([])
+          setNextEvent(null)
           setError("Recorded session unavailable")
         } else if (preferredSessionId && manualSelection.current === manualAtRequest) {
           setSelectedSessionId(preferredSessionId)
           setCursor({ afterRecord: preferredAfterRecord, startIndex: preferredStartIndex })
           setPreviousPages([])
           setSelectedEvents([])
+          setNextEvent(null)
         } else {
           setSelectedSessionId((current) => current && data.sessions.some((session) => session.session_id === current) ? current : data.sessions[0]?.session_id ?? null)
         }
@@ -124,6 +127,7 @@ export function useReplayArchive(
       pending.current = false
       setEventsLoading(false)
       setSelectedEvents([])
+      setNextEvent(null)
       return
     }
     const currentGeneration = ++generation.current
@@ -133,8 +137,9 @@ export function useReplayArchive(
     setEventsLoading(true)
     setError(null)
     setSelectedEvents([])
+    setNextEvent(null)
     const cursorQuery = cursor.afterRecord === null ? "" : `&after_record=${encodeURIComponent(cursor.afterRecord)}`
-    const url = `/api/sessions/${encodeURIComponent(selectedSessionId)}/events?limit=${replayPageSize}${cursorQuery}`
+    const url = `/api/sessions/${encodeURIComponent(selectedSessionId)}/events?limit=${replayPageSize + 1}${cursorQuery}`
     void fetch(url, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
@@ -143,7 +148,14 @@ export function useReplayArchive(
       .then((data) => {
         if (controller.signal.aborted || currentGeneration !== generation.current) return
         if (!Array.isArray(data.events)) throw new Error("Invalid events")
-        setSelectedEvents(data.events.slice(0, replayPageSize).map((event) => parsePacketEnvelope(JSON.stringify(event))))
+        const page = data.events.slice(0, replayPageSize).map((event) => parsePacketEnvelope(JSON.stringify(event)))
+        let lookahead: PacketEnvelope | null = null
+        if (data.events[replayPageSize]) {
+          try { lookahead = parsePacketEnvelope(JSON.stringify(data.events[replayPageSize])) }
+          catch { /* The next page will show the malformed record when it becomes visible. */ }
+        }
+        setSelectedEvents(page)
+        setNextEvent(lookahead)
       })
       .catch((cause: unknown) => {
         if (!controller.signal.aborted && currentGeneration === generation.current) setError(cause instanceof Error ? cause.message : "Fetch failed")
@@ -179,6 +191,7 @@ export function useReplayArchive(
       : { afterRecord: null, startIndex: 0 })
     setPreviousPages([])
     setSelectedEvents([])
+    setNextEvent(null)
     setError(null)
     setEventsLoading(true)
   }, [selectedSessionId, preferredSessionId, preferredAfterRecord, preferredStartIndex])
@@ -187,10 +200,12 @@ export function useReplayArchive(
     if (!enabled || !selectedSessionId || loading || pending.current || !hasMore) return
     const lastRecord = selectedEvents.at(-1)?.record
     if (!lastRecord) return
+    pending.current = true
     manualSelection.current++
     setPreviousPages((current) => [...current, cursor])
     setCursor({ afterRecord: lastRecord, startIndex: cursor.startIndex + selectedEvents.length })
     setSelectedEvents([])
+    setNextEvent(null)
     setEventsLoading(true)
   }, [enabled, selectedSessionId, loading, hasMore, selectedEvents, cursor])
 
@@ -201,6 +216,7 @@ export function useReplayArchive(
     setPreviousPages((current) => current.slice(0, -1))
     setCursor(previous)
     setSelectedEvents([])
+    setNextEvent(null)
     setEventsLoading(true)
   }, [enabled, selectedSessionId, loading, previousPages])
 
@@ -214,12 +230,13 @@ export function useReplayArchive(
     setCursor({ afterRecord: null, startIndex: 0 })
     setPreviousPages([])
     setSelectedEvents([])
+    setNextEvent(null)
     setError(null)
     setEventsLoading(true)
   }, [enabled, selectedSessionId])
 
   return {
-    sessions, selectedSessionId, selectedEvents, loading, error, hasMore,
+    sessions, selectedSessionId, selectedEvents, nextEvent, loading, error, hasMore,
     hasPrevious: previousPages.length > 0, pageNumber: previousPages.length + 1,
     pageStartIndex: cursor.startIndex, selectSession, loadMore, loadPrevious, jumpToStart,
   }

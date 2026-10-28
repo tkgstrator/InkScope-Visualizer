@@ -149,15 +149,33 @@ export function Dashboard() {
 
   useEffect(() => {
     if (!replayPlaying) return
-    const delay = source === "demo" ? replayPosition < 100 ? 250 : null :
-      replayDelayMs(replayArchive.selectedEvents, replayPosition)
-    if (delay === null) {
+    if (source === "demo") {
+      if (replayPosition >= 100) { setReplayPlaying(false); return }
+      const timer = window.setTimeout(() => setReplayPosition((current) => current + 1), 250)
+      return () => window.clearTimeout(timer)
+    }
+    if (replayArchive.loading) return
+    const events = replayArchive.selectedEvents
+    if (replayArchive.error || events.length === 0) {
       setReplayPlaying(false)
       return
     }
+    if (replayPosition >= events.length - 1) {
+      if (!replayArchive.hasMore) { setReplayPlaying(false); return }
+      const lastEvent = events.at(-1)!
+      const delay = replayArchive.nextEvent ? replayDelayMs([lastEvent, replayArchive.nextEvent], 0) ?? 50 : 50
+      const timer = window.setTimeout(() => {
+        setReplayPosition(0)
+        replayArchive.loadMore()
+      }, delay)
+      return () => window.clearTimeout(timer)
+    }
+    const delay = replayDelayMs(events, replayPosition)
+    if (delay === null) { setReplayPlaying(false); return }
     const timer = window.setTimeout(() => setReplayPosition((current) => current + 1), delay)
     return () => window.clearTimeout(timer)
-  }, [replayPlaying, replayPosition, source, replayArchive.selectedEvents])
+  }, [replayPlaying, replayPosition, source, replayArchive.selectedEvents, replayArchive.loading,
+    replayArchive.error, replayArchive.hasMore, replayArchive.nextEvent, replayArchive.loadMore])
 
   const selectReplaySession = (sessionId: string) => {
     replayArchive.selectSession(sessionId)

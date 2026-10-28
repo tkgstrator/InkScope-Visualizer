@@ -107,6 +107,53 @@ test("recorded Replay starts at the configured OnlineCoopSetting window", async 
   await expect(page.getByText("1–100 / 200")).toBeVisible()
 })
 
+test("recorded Replay plays past the first page and stops at the session end", async ({ page }) => {
+  const firstPage = Array.from({ length: 100 }, (_, index) => ({
+    ...recordedEvents[index % recordedEvents.length], record: String(index + 3),
+  }))
+  const secondPage = [
+    { ...recordedEvents[1], record: "103" },
+    { ...recordedEvents[2], record: "104" },
+  ]
+  let releaseSecondPage: () => void = () => {}
+  const secondPageGate = new Promise<void>((resolve) => { releaseSecondPage = resolve })
+  let secondPageRequested: () => void = () => {}
+  const secondPageRequest = new Promise<void>((resolve) => { secondPageRequested = resolve })
+  const cursors: string[] = []
+  await page.route("**/api/sample", (route) => route.fulfill({ json: {
+    version: 1, state: "ready", session_id: sessionId, after_record: "2", start_index: 2, events: [...firstPage, ...secondPage],
+  } }))
+  await page.route("**/api/sessions**", (route) => route.fulfill({ json: { version: 1, sessions: [
+    { session_id: sessionId, events: "104", first_timestamp_ns: packet.timestamp_ns, last_timestamp_ns: packet.timestamp_ns },
+  ] } }))
+  await page.route(/\/api\/sessions\/[^/]+\/events\?/, async (route) => {
+    const cursor = new URL(route.request().url()).searchParams.get("after_record") ?? ""
+    cursors.push(cursor)
+    if (cursor === "102") {
+      secondPageRequested()
+      await secondPageGate
+    }
+    await route.fulfill({ json: { version: 1, session_id: sessionId, events: cursor === "2" ? [...firstPage, secondPage[0]] : secondPage } })
+  })
+
+  await page.goto("/")
+  await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true")
+  await page.getByRole("tab", { name: "Replay" }).click()
+  await expect(page.getByText("RECORDS #3–#102")).toBeVisible()
+  await expect(page.getByText("OnlineCoopSetting").first()).toBeVisible()
+  const slider = page.locator('[data-slot="slider-thumb"]').first()
+  await slider.focus()
+  await slider.press("End")
+  await page.getByRole("button", { name: "Play replay" }).click()
+  await secondPageRequest
+  await expect(page.getByRole("button", { name: "Pause replay" })).toBeEnabled()
+  releaseSecondPage()
+  await expect(page.getByText("RECORDS #103–#104")).toBeVisible()
+  await expect(page.getByText("SESSION END")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Play replay" })).toBeVisible()
+  expect(cursors).toEqual(["2", "102"])
+})
+
 test("a manual Replay selection wins over a pending preferred-session refresh", async ({ page }) => {
   const otherSession = "a61c1c49-4dae-4c6f-aa41-4f7f2a44411e"
   let holdNext = false

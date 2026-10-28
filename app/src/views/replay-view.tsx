@@ -125,7 +125,7 @@ export function ReplayView({
                 </div>
                 <div className="flex items-center gap-3">
                   <Button variant="outline" size="icon" className="rounded-sm" aria-label={playing ? "Pause replay" : "Play replay"}
-                    disabled={selectedEvents.length === 0} onClick={() => onPlayingChange(!playing)}>
+                    disabled={selectedEvents.length === 0 && !playing} onClick={() => onPlayingChange(!playing)}>
                     {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
                   </Button>
                   <span className="w-20 shrink-0 font-mono text-xs">{currentEvent ? `#${currentEvent.record}` : "—"}</span>
