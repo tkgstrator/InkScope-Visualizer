@@ -12,6 +12,7 @@ import { StageMap } from "@/components/dashboard/stage-map"
 import { useLiveFeed, useOverlayFeed } from "@/lib/live-feed"
 import { useReplayArchive } from "@/lib/replay-archive"
 import { replayIndexAtMs, replayOffsetsMs } from "@/lib/replay-clock"
+import { buildReplayGameTimeline, replayActiveSpawns, replayGameSnapshotAt, type ReplaySpawn } from "@/lib/replay-game-state"
 import { livePacketRows, packetRowsForEvents } from "@/lib/packet-view"
 import { useRecordedSample } from "@/lib/recorded-sample"
 import { emptySessionObservation, foldObservationSnapshot } from "@/lib/session-observation"
@@ -80,6 +81,18 @@ export function Dashboard() {
   )
   const replayOffsets = useMemo(() => replayOffsetsMs(replayArchive.selectedEvents), [replayArchive.selectedEvents])
   const replayDurationMs = replayOffsets.at(-1) ?? 0
+  const replayGameTimeline = useMemo(() => buildReplayGameTimeline(replayArchive.selectedEvents), [replayArchive.selectedEvents])
+  const replayHud = useMemo(() => replayGameSnapshotAt(replayGameTimeline, replayPosition), [replayGameTimeline, replayPosition])
+  const replaySpawnsCache = useRef<ReplaySpawn[]>([])
+  const replaySpawns = useMemo(() => {
+    const first = replayArchive.selectedEvents[0]
+    if (!first) { replaySpawnsCache.current = []; return replaySpawnsCache.current }
+    const playheadNs = BigInt(first.timestamp_ns) + BigInt(Math.round(replayElapsedMs * 1_000_000))
+    const active = replayActiveSpawns(replayGameTimeline, playheadNs.toString(), 8_000, replayHud.stageId ?? replayHud.sessionStageId)
+    if (active.length === replaySpawnsCache.current.length && active.every((spawn, index) => spawn === replaySpawnsCache.current[index])) return replaySpawnsCache.current
+    replaySpawnsCache.current = active
+    return active
+  }, [replayArchive.selectedEvents, replayGameTimeline, replayElapsedMs, replayHud.stageId, replayHud.sessionStageId])
   const activePackets = source === "demo" ? packets : source === "live" ? livePackets : recordedPackets
   const observation = source === "recorded" ? recordedObservation : liveFeed.observation
   const visibleEvents = source === "recorded" ? recordedEvents : liveFeed.events
@@ -228,6 +241,11 @@ export function Dashboard() {
   const selectedWave = waveData.find((item) => item.wave === wave) ?? waveData[1]
   const requestedWave = Number(new URLSearchParams(window.location.search).get("wave"))
   const overlayWave = [1, 2, 3].includes(requestedWave) ? requestedWave : wave
+  const replayKeyStatus = source === "recorded" ? "—" :
+    controlKeyLocked && (controlKeyState === "applied" || controlKeyState === "pending") ? "LOCKED" :
+      localGameKey ? "LOCAL" : controlKeyState === "applied" || controlKeyState === "pending" ? "CONFIGURED" : "—"
+  const replayCanvas = view === "replay" && source !== "demo"
+  const canvasView = view === "map" || replayCanvas
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -275,12 +293,12 @@ export function Dashboard() {
         </div>
       </header>
 
-      <Tabs value={view} onValueChange={(value) => setView(value as View)} orientation={verticalNav ? "vertical" : "horizontal"} className="grid h-[calc(100vh-4rem)] grid-cols-[64px_280px_minmax(0,1fr)] gap-0 max-xl:block max-xl:h-auto">
+      <Tabs value={view} onValueChange={(value) => setView(value as View)} orientation={verticalNav ? "vertical" : "horizontal"} className={`grid h-[calc(100vh-4rem)] gap-0 max-xl:block max-xl:h-auto ${replayCanvas ? "grid-cols-[64px_minmax(0,1fr)]" : "grid-cols-[64px_280px_minmax(0,1fr)]"}`}>
         <NavMenu />
-        <SessionStatus serverRtt={serverRtt} clientRtt={clientRtt} wave={wave} quota={selectedWave.quota} source={source} connection={liveFeed.connection} observation={observation} localGameKey={localGameKey} controlKeyState={controlKeyState} controlKeyLocked={controlKeyLocked} />
+        {!replayCanvas && <SessionStatus serverRtt={serverRtt} clientRtt={clientRtt} wave={wave} quota={selectedWave.quota} source={source} connection={liveFeed.connection} observation={observation} localGameKey={localGameKey} controlKeyState={controlKeyState} controlKeyLocked={controlKeyLocked} />}
 
-        <main className={view === "map" ? "h-full min-h-0 min-w-0 overflow-hidden p-0 max-xl:h-[min(78vh,760px)]" : "min-w-0 overflow-y-auto p-6 max-xl:overflow-visible max-sm:p-3"}>
-          <div className={view === "map" ? "h-full w-full" : "mx-auto max-w-[1500px]"}>
+        <main className={canvasView ? "h-full min-h-0 min-w-0 overflow-hidden p-0 max-xl:h-[min(78vh,760px)]" : "min-w-0 overflow-y-auto p-6 max-xl:overflow-visible max-sm:p-3"}>
+          <div className={canvasView ? "h-full w-full" : "mx-auto max-w-[1500px]"}>
               {source === "recorded" && (recordedSample.status === "empty" || recordedSample.status === "error" || recordedSample.status === "unavailable") && <div role="alert" className="mb-4 border-b pb-3 font-mono text-xs text-destructive">RECORDED SAMPLE {recordedSample.status.toUpperCase()}{recordedSample.error ? ` · ${recordedSample.error}` : ""}</div>}
               {source === "recorded" && recordedWindow.length > 0 && (view === "debug" || view === "raw") && <div className="mb-3 flex flex-wrap items-center justify-between gap-2 font-mono text-xs text-muted-foreground">
                 <span>RECORDS #{recordedWindow[0]!.record}–#{recordedWindow.at(-1)!.record} · {recordedPageIndex + 1}/{recordedPageCount}</span>
@@ -319,8 +337,8 @@ export function Dashboard() {
                 <StageMap tick={tick} source={source} observedStageId={source === "demo" ? null : observation.stageId} observedTide={source === "demo" ? null : observation.tide} connection={liveFeed.connection} />
               </TabsContent>
 
-              <TabsContent value="replay">
-                <ReplayView source={source} persistence={source === "recorded" ? recordedSample.status === "ready" ? "postgres" : null : liveFeed.persistence} sessions={replayArchive.sessions} selectedSessionId={replayArchive.selectedSessionId} selectedEvents={replayArchive.selectedEvents} loading={replayArchive.loading} error={replayArchive.error} pageStartIndex={replayArchive.startIndex} onSelectSession={selectReplaySession} onRetry={replayArchive.retry} position={replayPosition} elapsedMs={replayElapsedMs} durationMs={replayDurationMs} playing={replayPlaying} onPositionChange={source === "demo" ? setReplayPosition : seekReplayPosition} onElapsedChange={seekReplayTime} onPlayingChange={changeReplayPlaying} onRestart={() => { setReplayElapsedMs(0); setReplayPosition(0); setReplayPlaying(false) }} />
+              <TabsContent value="replay" className={source === "demo" ? "" : "m-0 h-full"}>
+                <ReplayView source={source} persistence={source === "recorded" ? recordedSample.status === "ready" ? "postgres" : null : liveFeed.persistence} sessions={replayArchive.sessions} selectedSessionId={replayArchive.selectedSessionId} selectedEvents={replayArchive.selectedEvents} loading={replayArchive.loading} error={replayArchive.error} pageStartIndex={replayArchive.startIndex} onSelectSession={selectReplaySession} onRetry={replayArchive.retry} position={replayPosition} elapsedMs={replayElapsedMs} durationMs={replayDurationMs} playing={replayPlaying} onPositionChange={source === "demo" ? setReplayPosition : seekReplayPosition} onElapsedChange={seekReplayTime} onPlayingChange={changeReplayPlaying} onRestart={() => { setReplayElapsedMs(0); setReplayPosition(0); setReplayPlaying(false) }} hud={replayHud} activeSpawns={replaySpawns} keyStatus={replayKeyStatus} />
               </TabsContent>
 
               <TabsContent value="obs">

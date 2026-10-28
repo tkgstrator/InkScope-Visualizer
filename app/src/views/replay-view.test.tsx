@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { renderToStaticMarkup } from "react-dom/server"
 import { samplePacket } from "../../../api/test-fixture"
+import { replayGameSnapshotAt } from "@/lib/replay-game-state"
 import { ReplayView } from "./replay-view"
 
 test("saved replay shows a continuous captured-time timeline without page controls", () => {
@@ -25,6 +26,9 @@ test("saved replay shows a continuous captured-time timeline without page contro
       onElapsedChange={() => {}}
       onPlayingChange={() => {}}
       onRestart={() => {}}
+      hud={{ ...replayGameSnapshotAt({ snapshots: [], spawns: [] }, -1), stageId: "Cop_Shakedent", sessionStageId: "Cop_Shakedent", difficulty: "150", quota: "4", enemySpawnCount: 1 }}
+      activeSpawns={[]}
+      keyStatus="—"
     />,
   )
 
@@ -32,6 +36,11 @@ test("saved replay shows a continuous captured-time timeline without page contro
   expect(html).toContain("2026/10/27 09:00:01.123")
   expect(html).toContain("00:01.1 / 00:01.1")
   expect(html).toContain('aria-label="Replay time"')
+  expect(html).toContain('aria-label="Replay HUD"')
+  expect(html).toContain("Cop_Shakedent")
+  expect(html).toContain("DIFFICULTY")
+  expect(html).toContain("ENEMY SPAWN")
+  expect(html).toContain('aria-label="Replay session"')
   expect(html).not.toContain("PAGE ")
   expect(html).not.toContain("Previous page")
   expect(html).not.toContain("Next page")

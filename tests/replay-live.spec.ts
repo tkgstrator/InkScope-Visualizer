@@ -1,7 +1,12 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 import { readFileSync } from "node:fs"
 
 const fixture = JSON.parse(readFileSync(new URL("../api/fixtures/packet-v1.json", import.meta.url), "utf8"))
+
+async function selectReplaySession(page: Page, sessionId: string): Promise<void> {
+  await page.getByRole("combobox", { name: "Replay session" }).click()
+  await page.getByRole("option", { name: new RegExp(sessionId.slice(0, 8)) }).click()
+}
 
 test("saved session events appear in live Replay without demo values", async ({ page }) => {
   const first = { ...fixture, record: "18446744073709551614" }
@@ -20,8 +25,9 @@ test("saved session events appear in live Replay without demo values", async ({ 
   await page.goto("/?source=demo")
   await page.getByRole("button", { name: "Switch to live feed" }).click()
   await page.getByRole("tab", { name: "Replay" }).click()
-  await expect(page.getByRole("button", { name: `Session ${fixture.session_id}` })).toBeVisible()
-  await expect(page.getByText("2 EVENTS", { exact: true })).toBeVisible()
+  await expect(page.getByRole("combobox", { name: "Replay session" })).toContainText(fixture.session_id.slice(0, 8))
+  await expect(page.getByRole("region", { name: "Replay HUD" }).getByText("2 / 2")).toBeVisible()
+  await page.locator("summary").filter({ hasText: "EVENTS" }).click()
   await expect(page.getByText(`#${first.record}`).first()).toBeVisible()
   await page.getByRole("button", { name: new RegExp(`#${second.record}`) }).click()
   await expect(page.getByText("Cop_Shakedent")).toBeVisible()
@@ -47,7 +53,7 @@ test("an exact 500-record archive loads as one timeline", async ({ page }) => {
   await page.goto("/?source=demo")
   await page.getByRole("button", { name: "Switch to live feed" }).click()
   await page.getByRole("tab", { name: "Replay" }).click()
-  await expect(page.getByText("500 EVENTS", { exact: true })).toBeVisible()
+  await expect(page.getByRole("region", { name: "Replay HUD" }).getByText("500 / 500")).toBeVisible()
   await expect(page.getByText("RECORDS #1–#500")).toBeVisible()
   await expect(page.getByRole("button", { name: /Next page|Previous page|Session start/ })).toHaveCount(0)
   expect(requests).toEqual([""])
@@ -92,12 +98,12 @@ test("replay ignores a pending old-session batch after selection changes", async
   await page.getByRole("tab", { name: "Replay" }).click()
   await oldBatchRequested
   await expect(page.getByText("LOADING 500 / 501").first()).toBeVisible()
-  await page.getByRole("button", { name: `Session ${otherSessionId}` }).click()
+  await selectReplaySession(page, otherSessionId)
   gate.release()
   await expect(page.getByText("RECORDS #7–#7")).toBeVisible()
-  await expect(page.getByText("1 EVENTS", { exact: true })).toBeVisible()
-  await page.getByRole("button", { name: `Session ${fixture.session_id}` }).click()
-  await expect(page.getByText("501 EVENTS", { exact: true })).toBeVisible()
+  await expect(page.getByRole("region", { name: "Replay HUD" }).getByText("1 / 1")).toBeVisible()
+  await selectReplaySession(page, fixture.session_id)
+  await expect(page.getByRole("region", { name: "Replay HUD" }).getByText("501 / 501")).toBeVisible()
   await expect(page.getByText("RECORDS #1–#501")).toBeVisible()
   await expect(page.getByRole("button", { name: /Next page|Previous page|Session start/ })).toHaveCount(0)
 })
@@ -124,9 +130,9 @@ test("an open replay discovers packets appended after the initial session list",
 
   await page.goto("/?source=live")
   await page.getByRole("tab", { name: "Replay" }).click()
-  await expect(page.getByText("100 EVENTS", { exact: true })).toBeVisible()
+  await expect(page.getByRole("region", { name: "Replay HUD" }).getByText("100 / 100")).toBeVisible()
   await expect.poll(() => sessionReads.count, { timeout: 8_000 }).toBeGreaterThan(1)
-  await expect(page.getByText("101 EVENTS", { exact: true })).toBeVisible({ timeout: 8_000 })
+  await expect(page.getByRole("region", { name: "Replay HUD" }).getByText("101 / 101")).toBeVisible({ timeout: 8_000 })
   await expect(page.getByText("RECORDS #1–#101")).toBeVisible()
 })
 
@@ -160,7 +166,7 @@ test("a partial archive error pauses replay until Retry completes", async ({ pag
   await expect(page.getByRole("button", { name: "Play replay" })).toBeDisabled()
   await expect(page.getByRole("slider", { name: "Replay time" })).toBeDisabled()
   await page.getByRole("button", { name: "Retry" }).click()
-  await expect(page.getByText("501 EVENTS", { exact: true })).toBeVisible()
+  await expect(page.getByRole("region", { name: "Replay HUD" }).getByText("501 / 501")).toBeVisible()
   await expect(page.getByRole("button", { name: "Play replay" })).toBeEnabled()
 })
 

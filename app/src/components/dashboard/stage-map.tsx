@@ -8,6 +8,7 @@ import type { AxisView } from "./camera-presets"
 import { markerKind, markerLegend, type MarkerKind } from "./marker-style"
 import { stagePoints } from "./stage-data"
 import type { CameraAction, StaticMarker } from "./stage-viewer"
+import type { ReplaySpawn } from "@/lib/replay-game-state"
 
 const StageViewer = lazy(() => import("./stage-viewer").then((module) => ({ default: module.StageViewer })))
 const axes: AxisView[] = ["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
@@ -83,16 +84,18 @@ function supportsWebGL(): boolean {
   }
 }
 
-export function StageMap({ tick, source, observedStageId, observedTide, connection = "connected" }: {
+export function StageMap({ tick, source, observedStageId, observedTide, connection = "connected", presentation = "full", replaySpawns = [] }: {
   tick: number
   source: "demo" | "live" | "replay" | "recorded"
   observedStageId?: string | null
   observedTide?: TideLayer | null
   connection?: "idle" | "connecting" | "connected" | "disconnected"
+  presentation?: "full" | "replay"
+  replaySpawns?: ReplaySpawn[]
 }) {
   const [catalog, setCatalog] = useState<CatalogStage[]>([])
   const [catalogError, setCatalogError] = useState(false)
-  const [selectedStageId, setSelectedStageId] = useState("Cop_Shakedent")
+  const [selectedStageId, setSelectedStageId] = useState(() => presentation === "replay" ? observedStageId ?? "" : "Cop_Shakedent")
   const [stageOrigin, setStageOrigin] = useState<"manual" | "observed" | "previous">("manual")
   const selectedStage = catalog.find((stage) => stage.stageId === selectedStageId) ?? null
   const points = useMemo(() => source === "demo" && selectedStageId === "Cop_Shakedent" ? stagePoints(tick) : [], [source, selectedStageId, tick])
@@ -121,6 +124,12 @@ export function StageMap({ tick, source, observedStageId, observedTide, connecti
     const kind = markerKind(marker.actor)
     return kind !== null && visibleKinds.has(kind) && inLayer(marker, markerLayer)
   }), [allMarkers, markerLayer, visibleKinds])
+  const displayMarkers = useMemo(() => presentation === "replay"
+    ? visibleMarkers.filter((marker) => markerKind(marker.actor) === "bank")
+    : visibleMarkers, [presentation, visibleMarkers])
+  const visibleReplaySpawns = useMemo(() => source === "replay" && presentation === "replay"
+    ? replaySpawns.filter((spawn) => spawn.position.length === 3 && spawn.position.every(Number.isFinite))
+    : [], [source, presentation, replaySpawns])
   const tide = markerLayer === "Low" || markerLayer === "Mid" || markerLayer === "High" ? markerLayer : null
   const waterY = tide ? selectedStage?.waterLevelLocators[tide].y ?? null : null
   const cameraReady = webgl && selectedStage !== null && markersLoaded
@@ -148,7 +157,7 @@ export function StageMap({ tick, source, observedStageId, observedTide, connecti
       .then((data) => {
         if (!Array.isArray(data.stages) || !data.stages.every(isCatalogStage)) throw new Error("Map catalog invalid")
         setCatalog(data.stages)
-        if (!data.stages.some((stage) => stage.stageId === selectedStageId)) chooseStage(data.stages[0]?.stageId ?? "")
+        if (presentation !== "replay" && !data.stages.some((stage) => stage.stageId === selectedStageId)) chooseStage(data.stages[0]?.stageId ?? "")
       })
       .catch((error: unknown) => {
         if (error instanceof Error && error.name === "AbortError") return
@@ -163,9 +172,13 @@ export function StageMap({ tick, source, observedStageId, observedTide, connecti
 
   useEffect(() => {
     if (source === "demo") return
+    if (presentation === "replay") {
+      if (observedStageId) chooseStage(observedStageId, "observed")
+      return
+    }
     if (observedStageId && catalog.some((stage) => stage.stageId === observedStageId)) chooseStage(observedStageId, "observed")
     else setStageOrigin((current) => current === "observed" ? "previous" : current)
-  }, [catalog, observedStageId, source])
+  }, [catalog, observedStageId, source, presentation])
 
   useEffect(() => {
     if (!selectedStage) return
@@ -333,20 +346,20 @@ export function StageMap({ tick, source, observedStageId, observedTide, connecti
   )
 
   return (
-    <div className="relative h-full min-h-[420px] w-full overflow-hidden bg-[#111316]">
+    <div className="relative h-full min-h-[420px] w-full overflow-hidden bg-[#111316]" role={presentation === "replay" ? "region" : undefined} aria-label={presentation === "replay" ? `Replay map ${selectedStageId || "unknown stage"}` : undefined}>
       <div className="absolute inset-0">
         {webgl ? (
           <ViewerBoundary fallback={fallback}>
             <Suspense fallback={<div className="flex h-full items-center justify-center text-xs text-muted-foreground">Loading 3D viewer…</div>}>
-              <StageViewer key={selectedStageId} points={points} markers={visibleMarkers} focusMarkers={markers} waterY={waterY} terrainUrl={terrainState === "loading" || terrainState === "ready" ? selectedStage?.modelUrl ?? null : null} terrainReady={terrainState === "ready"} onTerrainState={(state) => { if (currentStageId.current === selectedStageId) setTerrainState(state) }} onMarkerSelect={setSelectedMarker} action={action} character={character} onFreeOrbit={() => setActiveView(null)} />
+              <StageViewer key={selectedStageId} points={points} markers={displayMarkers} replaySpawns={visibleReplaySpawns} focusMarkers={markers} waterY={waterY} terrainUrl={terrainState === "loading" || terrainState === "ready" ? selectedStage?.modelUrl ?? null : null} terrainReady={terrainState === "ready"} onTerrainState={(state) => { if (currentStageId.current === selectedStageId) setTerrainState(state) }} onMarkerSelect={setSelectedMarker} action={action} character={character} onFreeOrbit={() => setActiveView(null)} />
             </Suspense>
           </ViewerBoundary>
         ) : fallback}
       </div>
 
-      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between gap-2 p-3">
+      <div className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-between gap-2 p-3 ${presentation === "replay" ? "max-sm:pt-[200px]" : ""}`}>
         <div className="flex items-start justify-between gap-2 max-sm:flex-col">
-          <section className="pointer-events-auto w-[min(310px,100%)] rounded-sm border bg-sidebar/90 p-2 backdrop-blur-md" aria-label="Map status and stage">
+          {presentation === "full" && <section className="pointer-events-auto w-[min(310px,100%)] rounded-sm border bg-sidebar/90 p-2 backdrop-blur-md" aria-label="Map status and stage">
             <div className="flex items-baseline justify-between gap-2">
               <h2 className="text-sm font-semibold">Map &amp; position</h2>
               <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground">ROMFS · 11.3.0{source === "live" && connection !== "connected" && <Badge variant="outline" className="rounded-sm text-xs">{connection.toUpperCase()}</Badge>}</span>
@@ -376,18 +389,23 @@ export function StageMap({ tick, source, observedStageId, observedTide, connecti
               {extraError && <Badge variant="outline" className="rounded-sm font-mono text-xs">EXTRA ANCHORS UNAVAILABLE</Badge>}
             </div>
             {selectedStage && tide && <div className="mt-1 flex items-center gap-1 font-mono text-xs text-muted-foreground"><span>{waterY === null ? "WATER —" : "TIDE " + (tide === "Mid" ? "NORMAL" : tide.toUpperCase()) + " · Y " + waterY.toFixed(2)}</span><Badge variant="outline" className="rounded-sm text-xs">FIXED</Badge></div>}
-          </section>
+          </section>}
 
-          <section className="pointer-events-auto hidden w-[min(480px,100%)] rounded-sm border bg-sidebar/90 p-2 backdrop-blur-md sm:block" aria-label="Map camera">
+          <section className={`pointer-events-auto hidden w-[min(480px,100%)] rounded-sm border bg-sidebar/90 p-2 backdrop-blur-md sm:block ${presentation === "replay" ? "ml-auto" : ""}`} aria-label="Map camera">
             {cameraControls}
+            {presentation === "replay" && <div className="mt-2 flex flex-wrap gap-3 border-t pt-2 font-mono text-xs" aria-label="Replay spawn legend">
+              <span className="text-[#ff7056]">ENEMY SPAWN {visibleReplaySpawns.filter((spawn) => spawn.kind === "enemy").length}</span>
+              <span className="text-[#f6dc5d]">ITEM SPAWN {visibleReplaySpawns.filter((spawn) => spawn.kind === "item").length}</span>
+            </div>}
           </section>
-          <details className="pointer-events-auto w-full rounded-sm border bg-sidebar/90 p-2 backdrop-blur-md sm:hidden">
+          <details className={`pointer-events-auto rounded-sm border bg-sidebar/90 p-2 backdrop-blur-md sm:hidden ${presentation === "replay" ? "ml-auto w-[min(320px,100%)]" : "w-full"}`}>
             <summary className="cursor-pointer font-mono text-xs">CAMERA · {activeView === "home" ? "3D" : activeView ?? "FREE"}</summary>
             <div className="mt-2">{cameraControls}</div>
+            {presentation === "replay" && <div className="mt-2 border-t pt-2 font-mono text-xs" aria-label="Replay spawn legend">ENEMY SPAWN {visibleReplaySpawns.filter((spawn) => spawn.kind === "enemy").length} · ITEM SPAWN {visibleReplaySpawns.filter((spawn) => spawn.kind === "item").length}</div>}
           </details>
         </div>
 
-        <div className="flex flex-wrap items-end justify-between gap-2">
+        {presentation === "full" && <div className="flex flex-wrap items-end justify-between gap-2">
           <details className="pointer-events-auto w-[min(310px,100%)] rounded-sm border bg-sidebar/90 p-2 backdrop-blur-md">
             <summary className="cursor-pointer font-mono text-xs">SHOW MARKERS · {visibleMarkers.length}/{allMarkers.length}</summary>
             <div className="mt-2 grid max-h-[min(30vh,220px)] grid-cols-2 gap-1 overflow-y-auto border-t pt-2" aria-label="Map overlays">
@@ -405,8 +423,13 @@ export function StageMap({ tick, source, observedStageId, observedTide, connecti
             <summary className="cursor-pointer font-mono text-xs">POSITION · {selectedMarker?.actor ?? (players.length ? "DEMO" : "UNAVAILABLE")}</summary>
             <div className="mt-2">{characterControls}</div>
           </details>
-        </div>
+        </div>}
       </div>
+      {presentation === "replay" && visibleReplaySpawns.length > 0 && <ul className="sr-only" aria-label="Replay spawn locations">
+        {visibleReplaySpawns.map((spawn) => <li key={`${spawn.kind}:${spawn.record}`}>
+          {spawn.kind === "enemy" ? "Enemy" : "Item"} spawn #{spawn.record} {spawn.actor} XYZ {spawn.position.join(" / ")}
+        </li>)}
+      </ul>}
     </div>
   )
 }

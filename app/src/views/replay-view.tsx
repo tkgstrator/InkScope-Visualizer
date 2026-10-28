@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from "react"
+import { memo, useEffect, useRef, useState } from "react"
 import { Pause, Play, RotateCcw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { FlatCard } from "@/components/dashboard/flat-card"
+import { StageMap } from "@/components/dashboard/stage-map"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type { ReplayGameSnapshot, ReplaySpawn } from "@/lib/replay-game-state"
 import type { PacketEnvelope } from "../../../api/wire"
 
 export type ReplaySession = {
@@ -32,16 +35,21 @@ export type ReplayViewProps = {
   onPlayingChange: (playing: boolean) => void
   onRestart: () => void
   onRetry?: () => void
+  hud: ReplayGameSnapshot
+  activeSpawns: ReplaySpawn[]
+  keyStatus?: string
 }
+
+const captureFormatter = new Intl.DateTimeFormat("ja-JP", {
+  timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3, hour12: false,
+})
 
 function captureTime(timestampNs: string): string {
   try {
     const millis = BigInt(timestampNs) / 1_000_000n
     if (millis < 0n || millis > BigInt(Number.MAX_SAFE_INTEGER)) return timestampNs
-    return new Intl.DateTimeFormat("ja-JP", {
-      timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
-      hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3, hour12: false,
-    }).format(new Date(Number(millis)))
+    return captureFormatter.format(new Date(Number(millis)))
   } catch {
     return timestampNs
   }
@@ -61,10 +69,18 @@ const timelineRowHeight = 32
 const timelineViewportHeight = 320
 const timelineOverscan = 8
 
+const ReplayTerrain = memo(function ReplayTerrain({ stageId, tide, spawns }: {
+  stageId: string
+  tide: ReplayGameSnapshot["tide"]
+  spawns: ReplaySpawn[]
+}) {
+  return <StageMap tick={0} source="replay" presentation="replay" observedStageId={stageId} observedTide={tide} replaySpawns={spawns} />
+})
+
 export function ReplayView({
   source, persistence = null, sessions, selectedSessionId, selectedEvents, loading, error,
   pageStartIndex = 0, onSelectSession, position, elapsedMs, durationMs, playing,
-  onPositionChange, onElapsedChange, onPlayingChange, onRestart, onRetry,
+  onPositionChange, onElapsedChange, onPlayingChange, onRestart, onRetry, hud, activeSpawns, keyStatus = "—",
 }: ReplayViewProps) {
   const replaySeconds = Math.floor(position * 1.2)
   const replayTime = `${String(Math.floor(replaySeconds / 60)).padStart(2, "0")}:${String(replaySeconds % 60).padStart(2, "0")}`
@@ -93,122 +109,188 @@ export function ReplayView({
     const element = timelineRef.current
     if (!element || selectedEvents.length === 0) return
     const rowTop = currentIndex * timelineRowHeight
-    if (rowTop < element.scrollTop || rowTop + timelineRowHeight > element.scrollTop + timelineViewportHeight) {
-      element.scrollTop = Math.max(0, rowTop - Math.floor(timelineViewportHeight / 2))
+    const viewportHeight = element.clientHeight || timelineViewportHeight
+    if (rowTop < element.scrollTop || rowTop + timelineRowHeight > element.scrollTop + viewportHeight) {
+      element.scrollTop = Math.max(0, rowTop - Math.floor(viewportHeight / 2))
       setTimelineScrollTop(element.scrollTop)
     }
   }, [currentIndex, selectedEvents.length, selectedSessionId])
 
   if (source !== "demo") {
+    const mapStage = hud.stageId ?? hud.sessionStageId
+    const latestActiveSpawn = activeSpawns.at(-1)
     return (
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h3 className="font-semibold">Session replay</h3>
-          </div>
-          <Badge variant="outline" className="rounded-sm">{persistence?.toUpperCase() ?? "CONNECTING"}</Badge>
+      <div className="relative h-full min-h-[520px] w-full overflow-hidden bg-[#111316]" aria-label="Replay stage">
+        <div className="absolute inset-0">
+          {mapStage ? <ReplayTerrain stageId={mapStage} tide={hud.tide} spawns={activeSpawns} /> :
+            <div className="grid h-full place-items-center font-mono text-xs text-muted-foreground">MAP —</div>}
         </div>
-        {persistence !== "postgres" ? (
-          <FlatCard title="Sessions" meta="UNAVAILABLE"><span role="status" className="font-mono text-xs text-muted-foreground">{persistence === null ? "CONNECTING" : "NO DATABASE"}</span></FlatCard>
-        ) : (
-          <div className="grid gap-3 2xl:grid-cols-[300px_minmax(0,1fr)]">
-            <FlatCard title="Sessions" meta={String(sessions.length)} className="min-w-0">
-              <div className="max-h-[560px] divide-y overflow-y-auto">
-                {sessions.map((session) => (
-                  <button key={session.session_id} type="button" aria-pressed={session.session_id === selectedSessionId}
-                    title={session.session_id} aria-label={`Session ${session.session_id}`}
-                    className={`w-full px-1 py-3 text-left hover:bg-muted/30 ${session.session_id === selectedSessionId ? "bg-muted/30" : ""}`}
-                    onClick={() => onSelectSession(session.session_id)}>
-                    <span className="flex items-center justify-between gap-2 font-mono text-xs"><strong>{shortSessionId(session.session_id)}</strong><span className="text-muted-foreground">{session.events} events</span></span>
-                    <span className="mt-1 block font-mono text-xs text-muted-foreground">{captureTime(session.first_timestamp_ns)}</span>
-                  </button>
-                ))}
-                {sessions.length === 0 && <div className="py-3 font-mono text-xs text-muted-foreground">{loading ? "LOADING" : "NO SESSIONS"}</div>}
+
+        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between gap-3 p-3 sm:p-4">
+          <section className="pointer-events-auto w-full rounded-sm border bg-sidebar/90 p-2 font-mono text-xs backdrop-blur-sm sm:hidden" aria-label="Replay HUD">
+            <div className="flex items-center justify-between gap-2">
+              <strong className="tracking-widest">REPLAY</strong>
+              <time className="min-w-0 truncate text-right tabular-nums">{captureClock} {firstLoaded ? "JST" : ""}</time>
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-2 border-t pt-1">
+              <strong className="min-w-0 truncate">{mapStage ?? "STAGE —"}</strong>
+              <span className="shrink-0">DIFFICULTY {hud.difficulty ?? "—"}</span>
+            </div>
+            <div className="mt-1 grid grid-cols-3 gap-x-2 border-t pt-1">
+              <span>WAVE {hud.wave ?? "—"}</span><span>TIDE {hud.tide ?? "—"}</span><span>QUOTA {hud.quota ?? "—"}</span>
+              <span>ENEMY {hud.enemySpawnCount}</span><span>ITEM {hud.itemSpawnCount}</span><span>KEY {keyStatus}</span>
+            </div>
+            {latestActiveSpawn && <div className="mt-1 truncate border-t pt-1">{latestActiveSpawn.kind === "enemy" ? "ENEMY" : "ITEM"} · {latestActiveSpawn.actor}</div>}
+            <div className="mt-1 flex items-center gap-2 border-t pt-1">
+              <Select value={selectedSessionId ?? undefined} onValueChange={onSelectSession} disabled={sessions.length === 0}>
+                <SelectTrigger className="h-8 min-w-0 flex-1 rounded-sm font-mono text-xs" aria-label="Replay session">
+                  <SelectValue placeholder="SELECT SESSION" />
+                </SelectTrigger>
+                <SelectContent>{sessions.map((session) => <SelectItem key={session.session_id} value={session.session_id}>
+                  {shortSessionId(session.session_id)} · {session.events}
+                </SelectItem>)}</SelectContent>
+              </Select>
+              <span className="shrink-0 text-muted-foreground">{selectedEvents.length} / {replayCount}</span>
+            </div>
+            <details className="mt-1 border-t pt-1">
+              <summary className="cursor-pointer text-muted-foreground">DETAILS</summary>
+              <div className="mt-1 grid grid-cols-2 gap-x-2">
+                <span>SEQUENCE {hud.sequence ?? "—"}</span><span>JOB {hud.jobType ?? "—"}</span>
+                {hud.host ? <>
+                  <span>SERVER {hud.host}</span>
+                  {hud.clients.map((client) => <span key={client.ip}>CLIENT {client.ip} {client.delay ? client.delay + "ms" : "—"}</span>)}
+                </> : <>
+                  <span>SOURCE {hud.source ?? "—"}</span><span>DEST {hud.destination ?? "—"}</span>
+                  <span>DELAY {hud.pairDelay ? hud.pairDelay + "ms" : "—"}</span>
+                </>}
+                <span>{persistence?.toUpperCase() ?? "CONNECTING"}</span>
               </div>
-            </FlatCard>
-            <FlatCard title={selectedSession ? `Session ${shortSessionId(selectedSession.session_id)}` : "Timeline"}
-              meta={selectedSession ? loading ? `LOADING ${selectedEvents.length} / ${replayCount}` : error ? `LOADED ${selectedEvents.length} / ${replayCount}` : `${replayCount} EVENTS` : "SELECT SESSION"} className="min-w-0">
-              {error && <div role="alert" className="mb-3 flex items-center justify-between gap-3 font-mono text-xs text-destructive">
-                <span>ERROR · {error}</span>
-                {onRetry && <Button variant="outline" className="rounded-sm" onClick={onRetry}>Retry</Button>}
-              </div>}
-              {selectedSession && <>
-                <div className="mb-3 flex flex-wrap items-end justify-between gap-2 font-mono text-xs">
-                  <div>
-                    <div className="text-muted-foreground">CAPTURE TIME</div>
-                    <time className="font-semibold tabular-nums">{captureClock} {firstLoaded ? "JST" : ""}</time>
-                  </div>
-                  <span className="tabular-nums text-muted-foreground">{currentEvent ? `#${currentEvent.record}` : "—"} / {lastLoaded ? `#${lastLoaded.record}` : "—"}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" className="rounded-sm" aria-label={playing ? "Pause replay" : "Play replay"}
-                    disabled={loading || error !== null || selectedEvents.length < 2 || durationMs <= 0} onClick={() => onPlayingChange(!playing)}>
-                    {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-                    {playing ? "Pause" : "Play"}
-                  </Button>
-                  <Button variant="outline" className="rounded-sm" aria-label="Restart replay"
-                    disabled={loading || selectedEvents.length === 0} onClick={onRestart}>
-                    <RotateCcw className="size-4" />
-                    Restart
-                  </Button>
-                  <div className="min-w-0 flex-1">
-                    <Slider aria-label="Replay time" className="w-full" value={[elapsedMs >= durationMs ? Math.ceil(durationMs) : Math.max(0, Math.round(elapsedMs))]}
-                      max={Math.max(1, Math.ceil(durationMs))} step={1} disabled={loading || error !== null || selectedEvents.length < 2 || durationMs <= 0}
-                      onValueChange={(values) => onElapsedChange(Math.min(durationMs, values[0] ?? 0))} />
-                    <div className="mt-2 text-right font-mono text-xs tabular-nums text-muted-foreground">
-                      {formatElapsed(elapsedMs)} / {formatElapsed(durationMs)}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 grid gap-4 border-t pt-4 lg:grid-cols-[minmax(180px,.6fr)_minmax(0,1fr)]">
-                  <div ref={timelineRef} className="h-80 overflow-y-auto border-r" aria-label="Recorded event timeline"
-                    onScroll={(event) => setTimelineScrollTop(event.currentTarget.scrollTop)}>
-                    <div className="relative" style={{ height: selectedEvents.length * timelineRowHeight }}>
+            </details>
+          </section>
+          <section className="pointer-events-auto hidden w-[min(390px,100%)] rounded-sm border bg-sidebar/90 p-3 font-mono text-xs shadow-none backdrop-blur-sm sm:block" aria-label="Replay HUD">
+            <div className="flex items-center justify-between gap-2">
+              <strong className="text-sm tracking-widest">REPLAY</strong>
+              <Badge variant="outline" className="rounded-sm">{persistence?.toUpperCase() ?? "CONNECTING"}</Badge>
+            </div>
+            <div className="mt-2 border-t pt-2">
+              <div className="text-muted-foreground">CAPTURE TIME</div>
+              <time className="block text-base font-semibold tabular-nums sm:text-lg">{captureClock} {firstLoaded ? "JST" : ""}</time>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 border-t pt-2">
+              <div className="col-span-2 flex items-baseline justify-between gap-2">
+                <span className="text-muted-foreground">{hud.stageId ? "STAGE" : "SESSION STAGE"}</span>
+                <strong className="min-w-0 truncate text-right">{mapStage ?? "—"}</strong>
+              </div>
+              {hud.stageName && <div className="col-span-2 truncate text-muted-foreground">{hud.stageName}</div>}
+              <div><span className="text-muted-foreground">DIFFICULTY</span> <strong>{hud.difficulty ?? "—"}</strong></div>
+              <div><span className="text-muted-foreground">QUOTA</span> <strong>{hud.quota ?? "—"}</strong></div>
+              <div><span className="text-muted-foreground">SEQUENCE</span> <strong>{hud.sequence ?? "—"}</strong></div>
+              <div><span className="text-muted-foreground">JOB</span> <strong>{hud.jobType ?? "—"}</strong></div>
+              <div><span className="text-muted-foreground">WAVE</span> <strong>{hud.wave ?? "—"}</strong></div>
+              <div><span className="text-muted-foreground">TIDE</span> <strong>{hud.tide ?? "—"}</strong></div>
+            </div>
+            <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 border-t pt-2 text-muted-foreground">
+              <span>ENEMY SPAWN <strong className="text-foreground">{hud.enemySpawnCount}</strong></span>
+              <span>ITEM SPAWN <strong className="text-foreground">{hud.itemSpawnCount}</strong></span>
+              <span>KEY <strong className="text-foreground">{keyStatus}</strong></span>
+            </div>
+            {latestActiveSpawn && <div className="mt-1 truncate border-t pt-1 text-foreground">
+              {latestActiveSpawn.kind === "enemy" ? "ENEMY SPAWN" : "ITEM SPAWN"} · {latestActiveSpawn.actor}
+            </div>}
+            <div className="mt-2 border-t pt-2 text-muted-foreground">
+              {hud.host ? <>
+                <div className="flex justify-between gap-2"><span>SERVER</span><span className="text-foreground">{hud.host}</span></div>
+                {hud.clients.map((client) => <div key={client.ip} className="flex justify-between gap-2"><span>CLIENT</span><span className="text-foreground">{client.ip} · {client.delay ? client.delay + "ms" : "—"}</span></div>)}
+              </> : <>
+                <div className="flex justify-between gap-2"><span>SOURCE</span><span className="text-foreground">{hud.source ?? "—"}</span></div>
+                <div className="flex justify-between gap-2"><span>DEST</span><span className="text-foreground">{hud.destination ?? "—"}</span></div>
+                <div className="flex justify-between gap-2"><span>DELAY</span><span className="text-foreground">{hud.pairDelay ? hud.pairDelay + "ms" : "—"}</span></div>
+              </>}
+            </div>
+            <div className="mt-2 flex items-center gap-2 border-t pt-2">
+              <Select value={selectedSessionId ?? undefined} onValueChange={onSelectSession} disabled={sessions.length === 0}>
+                <SelectTrigger className="h-8 min-w-0 flex-1 rounded-sm font-mono text-xs" aria-label="Replay session">
+                  <SelectValue placeholder="SELECT SESSION" />
+                </SelectTrigger>
+                <SelectContent>{sessions.map((session) => <SelectItem key={session.session_id} value={session.session_id}>
+                  {shortSessionId(session.session_id)} · {session.events}
+                </SelectItem>)}</SelectContent>
+              </Select>
+              <span className="shrink-0 text-muted-foreground">{selectedEvents.length} / {replayCount}</span>
+            </div>
+          </section>
+
+          <section className="pointer-events-auto w-full rounded-sm border bg-sidebar/90 p-3 font-mono text-xs shadow-none backdrop-blur-sm" aria-label="Replay transport">
+            {error && <div role="alert" className="mb-2 flex items-center justify-between gap-2 border-b pb-2 text-destructive">
+              <span>ERROR · {error}</span>
+              {onRetry && <Button variant="outline" className="rounded-sm" onClick={onRetry}>Retry</Button>}
+            </div>}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <Button variant="outline" className="rounded-sm" aria-label={playing ? "Pause replay" : "Play replay"}
+                disabled={loading || error !== null || selectedEvents.length < 2 || durationMs <= 0} onClick={() => onPlayingChange(!playing)}>
+                {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+                {playing ? "Pause" : "Play"}
+              </Button>
+              <Button variant="outline" className="rounded-sm" aria-label="Restart replay"
+                disabled={loading || selectedEvents.length === 0} onClick={onRestart}>
+                <RotateCcw className="size-4" />
+                Restart
+              </Button>
+              <div className="min-w-[160px] flex-1">
+                <Slider aria-label="Replay time" className="w-full" value={[elapsedMs >= durationMs ? Math.ceil(durationMs) : Math.max(0, Math.round(elapsedMs))]}
+                  max={Math.max(1, Math.ceil(durationMs))} step={1} disabled={loading || error !== null || selectedEvents.length < 2 || durationMs <= 0}
+                  onValueChange={(values) => onElapsedChange(Math.min(durationMs, values[0] ?? 0))} />
+                <div className="mt-1 text-right tabular-nums text-muted-foreground">{formatElapsed(elapsedMs)} / {formatElapsed(durationMs)}</div>
+              </div>
+            </div>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-muted-foreground">
+              <span>{currentEvent ? "#" + currentEvent.record : "—"} / {lastLoaded ? "#" + lastLoaded.record : "—"}</span>
+              <span>{loading ? "LOADING " + selectedEvents.length + " / " + replayCount : error ? "LOAD INCOMPLETE" : playing ? "PLAYING" : elapsedMs >= durationMs && selectedEvents.length > 0 ? "SESSION END" : "PAUSED"}</span>
+              {firstLoaded && lastLoaded && <span>RECORDS #{firstLoaded.record}–#{lastLoaded.record}</span>}
+            </div>
+            <details className="mt-2 border-t pt-2" onToggle={(event) => {
+              if (!event.currentTarget.open || !timelineRef.current) return
+              const viewportHeight = timelineRef.current.clientHeight || timelineViewportHeight
+              timelineRef.current.scrollTop = Math.max(0, currentIndex * timelineRowHeight - viewportHeight / 2)
+              setTimelineScrollTop(timelineRef.current.scrollTop)
+            }}>
+              <summary className="cursor-pointer select-none text-muted-foreground">EVENTS · {selectedEvents.length}</summary>
+              <div className="mt-2 grid max-h-[min(42vh,400px)] gap-3 overflow-hidden border-t pt-2 lg:grid-cols-[minmax(220px,.65fr)_minmax(0,1fr)]">
+                <div ref={timelineRef} className="h-60 overflow-y-auto border-r lg:h-80" aria-label="Recorded event timeline"
+                  onScroll={(event) => setTimelineScrollTop(event.currentTarget.scrollTop)}>
+                  <div className="relative" style={{ height: selectedEvents.length * timelineRowHeight }}>
                     {timeline.map((event, offset) => {
                       const index = visibleStart + offset
                       const decodedRow = event.rows.at(-1)
-                      return <button key={`${event.session_id}:${event.record}`} type="button" aria-current={index === currentIndex ? "true" : undefined}
+                      return <button key={event.session_id + ":" + event.record} type="button" aria-current={index === currentIndex ? "true" : undefined}
                         style={{ top: index * timelineRowHeight, height: timelineRowHeight }}
-                        className={`absolute left-0 flex w-full items-center gap-2 border-b px-1 text-left font-mono text-xs hover:bg-muted/30 ${index === currentIndex ? "bg-muted/30" : ""}`}
+                        className={"absolute left-0 flex w-full items-center gap-2 border-b px-1 text-left font-mono text-xs hover:bg-muted/30 " + (index === currentIndex ? "bg-muted/30" : "")}
                         onClick={() => onPositionChange(index)}>
                         <span className="w-14 shrink-0 text-muted-foreground">#{event.record}</span>
                         <span className="min-w-0 flex-1 truncate">{decodedRow?.kind ?? "UDP"}</span>
                         <span className="truncate text-muted-foreground">{decodedRow?.status ?? "RAW"}</span>
                       </button>
                     })}
-                    </div>
-                    {selectedEvents.length === 0 && <div className="py-2 font-mono text-xs text-muted-foreground">{loading ? "LOADING" : "NO EVENTS"}</div>}
-                  </div>
-                  <div className="min-w-0 space-y-2 font-mono text-xs">
-                    {currentEvent && <>
-                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">CAPTURED</span><span className="text-right">{captureTime(currentEvent.timestamp_ns)}</span></div>
-                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">NS</span><span className="break-all text-right">{currentEvent.timestamp_ns}</span></div>
-                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">SOURCE</span><span className="break-all text-right">{currentEvent.packet.source_ip}:{currentEvent.packet.source_port}</span></div>
-                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">DESTINATION</span><span className="break-all text-right">{currentEvent.packet.destination_ip}:{currentEvent.packet.destination_port}</span></div>
-                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">PAYLOAD</span><span>{currentEvent.packet.payload_hex.length / 2} B</span></div>
-                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">ROWS</span><span>{currentEvent.rows.length}</span></div>
-                      <div className="border-t pt-2">{currentEvent.rows.map((row, index) => <div key={index} className="flex justify-between gap-3 py-1"><span>{row.kind}</span><span className="text-muted-foreground">{row.status}</span></div>)}</div>
-                      <div className="max-h-40 overflow-y-auto border-t pt-2">
-                        {currentEvent.rows.flatMap((row) => row.fields).slice(0, 24).map((field, index) => (
-                          <div key={index} className="flex justify-between gap-3 py-1"><span className="text-muted-foreground">{field.name}</span><span className="break-all text-right">{field.value}</span></div>
-                        ))}
-                      </div>
-                    </>}
                   </div>
                 </div>
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3 font-mono text-xs text-muted-foreground">
-                  <span>{loading ? `LOADING ${selectedEvents.length} / ${replayCount}` : error ? "LOAD INCOMPLETE" : playing ? "PLAYING" : elapsedMs >= durationMs && selectedEvents.length > 0 ? "SESSION END" : "PAUSED"}</span>
-                  {firstLoaded && lastLoaded && <span>RECORDS #{firstLoaded.record}–#{lastLoaded.record}</span>}
+                <div className="min-w-0 max-h-60 space-y-2 overflow-y-auto lg:max-h-80">
+                  {currentEvent && <>
+                    <div className="flex justify-between gap-3"><span className="text-muted-foreground">CAPTURED</span><span className="text-right">{captureTime(currentEvent.timestamp_ns)}</span></div>
+                    <div className="flex justify-between gap-3"><span className="text-muted-foreground">SOURCE</span><span className="break-all text-right">{currentEvent.packet.source_ip}:{currentEvent.packet.source_port}</span></div>
+                    <div className="flex justify-between gap-3"><span className="text-muted-foreground">DEST</span><span className="break-all text-right">{currentEvent.packet.destination_ip}:{currentEvent.packet.destination_port}</span></div>
+                    <div className="flex justify-between gap-3"><span className="text-muted-foreground">PAYLOAD</span><span>{currentEvent.packet.payload_hex.length / 2} B</span></div>
+                    <div className="border-t pt-1">{currentEvent.rows.map((row, index) => <div key={index} className="flex justify-between gap-3 py-1"><span>{row.kind}</span><span className="text-muted-foreground">{row.status}</span></div>)}</div>
+                    <div className="border-t pt-1">{currentEvent.rows.flatMap((row) => row.fields).slice(0, 24).map((field, index) =>
+                      <div key={index} className="flex justify-between gap-3 py-1"><span className="text-muted-foreground">{field.name}</span><span className="break-all text-right">{field.value}</span></div>)}</div>
+                  </>}
                 </div>
-              </>}
-              {!selectedSession && <div className="font-mono text-xs text-muted-foreground">SELECT SESSION</div>}
-            </FlatCard>
-          </div>
-        )}
+              </div>
+            </details>
+          </section>
+        </div>
       </div>
     )
   }
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">

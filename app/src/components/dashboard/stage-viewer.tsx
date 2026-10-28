@@ -6,6 +6,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
 import { axisPose, characterPose, quarterTurn, spectatorPose, type AxisView, type Vec3 } from "./camera-presets"
 import type { StagePoint } from "./stage-data"
 import { markerColor, markerKind } from "./marker-style"
+import type { ReplaySpawn } from "@/lib/replay-game-state"
 
 export type StaticMarker = {
   actor: string
@@ -143,9 +144,10 @@ function CameraRig({ action, character, focus, onFreeOrbit }: {
   return <OrbitControls ref={controls} enabled={!character} enableDamping minDistance={4} maxDistance={220} onStart={onFreeOrbit} />
 }
 
-function ViewerScene({ points, markers, focusMarkers, waterY, terrainUrl, terrainReady, onTerrainState, onMarkerSelect, action, character, onFreeOrbit }: {
+function ViewerScene({ points, markers, replaySpawns, focusMarkers, waterY, terrainUrl, terrainReady, onTerrainState, onMarkerSelect, action, character, onFreeOrbit }: {
   points: StagePoint[]
   markers: StaticMarker[]
+  replaySpawns: ReplaySpawn[]
   focusMarkers: StaticMarker[]
   waterY: number | null
   terrainUrl: string | null
@@ -199,6 +201,19 @@ function ViewerScene({ points, markers, focusMarkers, waterY, terrainUrl, terrai
           </mesh>
         )
       })}
+      {replaySpawns.map((spawn) => {
+        const color = spawn.kind === "enemy" ? "#ff7056" : "#f6dc5d"
+        return <group key={`${spawn.kind}:${spawn.record}`} position={spawn.position}>
+          <mesh>
+            {spawn.kind === "enemy" ? <octahedronGeometry args={[1.4, 0]} /> : <sphereGeometry args={[1.1, 12, 8]} />}
+            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.6} roughness={0.45} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={spawn.kind === "enemy" ? [1.8, 2.5, 24] : [1.5, 2.1, 24]} />
+            <meshBasicMaterial color={color} transparent opacity={0.8} side={DoubleSide} depthWrite={false} />
+          </mesh>
+        </group>
+      })}
       {points.filter((point) => point.kind === "player" && point.name !== character?.name).map((point) => (
         <group key={point.name} position={[point.x, point.y, point.z]}>
           <mesh position={[0, 1.3, 0]}>
@@ -221,6 +236,7 @@ function ViewerScene({ points, markers, focusMarkers, waterY, terrainUrl, terrai
 export function StageViewer(props: {
   points: StagePoint[]
   markers: StaticMarker[]
+  replaySpawns: ReplaySpawn[]
   focusMarkers: StaticMarker[]
   waterY: number | null
   terrainUrl: string | null
@@ -232,7 +248,7 @@ export function StageViewer(props: {
   onFreeOrbit: () => void
 }) {
   return (
-    <div className="h-full w-full overflow-hidden bg-[#111316]" role="img" aria-label={props.terrainReady ? "3D local stage terrain with static RomFS markers" : "3D stage coordinate viewer with static RomFS markers"}>
+    <div className="h-full w-full overflow-hidden bg-[#111316]" role="img" aria-label={props.replaySpawns.length > 0 ? "3D stage with recorded spawn markers" : props.terrainReady ? "3D local stage terrain with static RomFS markers" : "3D stage coordinate viewer with static RomFS markers"}>
       <Canvas camera={{ position: [100, 90, 100], fov: 52, near: 0.1, far: 4000 }} dpr={[1, 2]}>
         <ViewerScene {...props} />
       </Canvas>

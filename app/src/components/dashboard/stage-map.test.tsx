@@ -25,4 +25,22 @@ describe("StageMap data source", () => {
     expect(markup).toContain("OBSERVED Cop_UnknownNewStage · NO ROMFS MAP")
     expect(markup).not.toContain("OBSERVED STAGE")
   })
+
+  it("uses compact replay chrome and exposes only observed spawn locations", () => {
+    const markup = renderToStaticMarkup(<StageMap tick={0} source="replay" presentation="replay" observedStageId="Cop_Shakedent"
+      replaySpawns={[{ record: "29726", stageId: "Cop_Shakedent", kind: "enemy", actor: "SakeCopter", position: [2.227, 27.7, -19.246], timestampNs: "1" }]} />)
+
+    expect(markup).toContain('aria-label="Replay map Cop_Shakedent"')
+    expect(markup).toContain("ENEMY SPAWN 1")
+    expect(markup).toContain("Enemy spawn #29726 SakeCopter XYZ 2.227 / 27.7 / -19.246")
+    expect(markup).not.toContain("Map &amp; position")
+    expect(markup).not.toContain("SHOW MARKERS")
+    expect(markup).not.toContain("Character POV")
+  })
+
+  it("keeps an unknown replay stage neutral instead of selecting the default stage", () => {
+    const markup = renderToStaticMarkup(<StageMap tick={0} source="replay" presentation="replay" observedStageId="Cop_UnknownNewStage" />)
+    expect(markup).toContain('aria-label="Replay map Cop_UnknownNewStage"')
+    expect(markup).not.toContain("Cop_Shakedent")
+  })
 })

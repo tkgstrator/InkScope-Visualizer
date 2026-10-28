@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 import { readFileSync } from "node:fs"
 
 const packet = JSON.parse(readFileSync(new URL("../api/fixtures/packet-v1.json", import.meta.url), "utf8"))
@@ -14,6 +14,11 @@ const recordedEvents = [
     { name: "Type", value: "1" }, { name: "CaptureResponseDelayMs", value: "31.250" },
   ] }] },
 ]
+
+async function selectReplaySession(page: Page, sessionId: string): Promise<void> {
+  await page.getByRole("combobox", { name: "Replay session" }).click()
+  await page.getByRole("option", { name: new RegExp(sessionId.slice(0, 8)) }).click()
+}
 
 test("recorded sample is the default and never inherits synthetic gameplay", async ({ page }) => {
   await page.route("**/api/sample", (route) => route.fulfill({ json: {
@@ -104,9 +109,10 @@ test("recorded Replay starts at the configured OnlineCoopSetting window", async 
   await page.goto("/")
   await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true")
   await page.getByRole("tab", { name: "Replay" }).click()
-  await expect(page.getByRole("button", { name: `Session ${sessionId}` })).toHaveAttribute("aria-pressed", "true")
-  await expect(page.getByText("100 EVENTS", { exact: true })).toBeVisible()
+  await expect(page.getByRole("combobox", { name: "Replay session" })).toContainText(sessionId.slice(0, 8))
+  await expect(page.getByRole("region", { name: "Replay HUD" }).getByText("100 / 100")).toBeVisible()
   await expect(page.getByText("RECORDS #101–#200")).toBeVisible()
+  await page.locator("summary").filter({ hasText: "EVENTS" }).click()
   await expect(page.getByText("OnlineCoopSetting").first()).toBeVisible()
   await expect(page.getByRole("button", { name: /Next page|Previous page|Session start/ })).toHaveCount(0)
   await page.getByRole("button", { name: "Restart replay" }).click()
@@ -150,7 +156,8 @@ test("recorded Replay loads one timeline and plays on the capture clock", async 
   await expect(page.getByText("LOADING 500 / 502").first()).toBeVisible()
   secondPageGate.release()
   await expect(page.getByText("RECORDS #3–#504")).toBeVisible()
-  await expect(page.getByText("502 EVENTS", { exact: true })).toBeVisible()
+  await expect(page.getByRole("region", { name: "Replay HUD" }).getByText("502 / 502")).toBeVisible()
+  await page.locator("summary").filter({ hasText: "EVENTS" }).click()
   await expect(page.getByText("OnlineCoopSetting").first()).toBeVisible()
   await expect(page.getByRole("button", { name: /Next page|Previous page|Session start/ })).toHaveCount(0)
   const slider = page.getByRole("slider", { name: "Replay time" })
@@ -182,16 +189,16 @@ test("a manual Replay selection wins over a pending preferred-session refresh", 
   } }))
   await page.goto("/")
   await page.getByRole("tab", { name: "Replay" }).click()
-  await expect(page.getByRole("button", { name: `Session ${sessionId}` })).toHaveAttribute("aria-pressed", "true")
-  await page.getByRole("button", { name: `Session ${otherSession}` }).click()
-  await expect(page.getByRole("button", { name: `Session ${otherSession}` })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("combobox", { name: "Replay session" })).toContainText(sessionId.slice(0, 8))
+  await selectReplaySession(page, otherSession)
+  await expect(page.getByRole("combobox", { name: "Replay session" })).toContainText(otherSession.slice(0, 8))
   await page.getByRole("tab", { name: "Debug" }).click()
   control.holdNext = true
   await page.getByRole("tab", { name: "Replay" }).click()
   await held
-  await page.getByRole("button", { name: `Session ${otherSession}` }).click()
+  await selectReplaySession(page, otherSession)
   control.release()
-  await expect(page.getByRole("button", { name: `Session ${otherSession}` })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("combobox", { name: "Replay session" })).toContainText(otherSession.slice(0, 8))
 })
 
 test("Retry keeps a manually selected session", async ({ page }) => {
@@ -216,9 +223,9 @@ test("Retry keeps a manually selected session", async ({ page }) => {
 
   await page.goto("/")
   await page.getByRole("tab", { name: "Replay" }).click()
-  await page.getByRole("button", { name: `Session ${otherSession}` }).click()
+  await selectReplaySession(page, otherSession)
   await expect(page.getByRole("alert")).toContainText("HTTP 503")
   await page.getByRole("button", { name: "Retry" }).click()
-  await expect(page.getByRole("button", { name: `Session ${otherSession}` })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("combobox", { name: "Replay session" })).toContainText(otherSession.slice(0, 8))
   await expect(page.getByText("RECORDS #7–#7")).toBeVisible()
 })
