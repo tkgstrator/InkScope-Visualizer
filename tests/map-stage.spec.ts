@@ -14,7 +14,7 @@ async function chooseLayer(page: import("@playwright/test").Page, label: string)
 }
 
 test("stage selection loads its own fixed markers and resets the camera", async ({ page }) => {
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: /3D Map/ }).click()
   await expect(page.getByRole("combobox", { name: "Stage" })).toContainText("Cop_Shakedent")
   await page.getByRole("button", { name: "View from +Y" }).click()
@@ -31,7 +31,7 @@ test("stage selection loads its own fixed markers and resets the camera", async 
 })
 
 test("fixed tide preview uses the selected layer height and omits an unknown height", async ({ page }) => {
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: /3D Map/ }).click()
   await chooseLayer(page, "High tide")
   await expect(page.getByText("TIDE HIGH · Y 7.00")).toBeVisible()
@@ -45,7 +45,7 @@ test("fixed tide preview uses the selected layer height and omits an unknown hei
 
 test("a missing stage catalog stops loading indicators", async ({ page }) => {
   await page.route("**/maps/stages.json", (route) => route.fulfill({ status: 500, body: "" }))
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: /3D Map/ }).click()
   await expect(page.getByText("STAGE CATALOG UNAVAILABLE")).toBeVisible()
   await expect(page.getByText("STATIC MARKERS UNAVAILABLE")).toBeVisible()
@@ -60,7 +60,7 @@ test("layer selection waits for the stage catalog", async ({ page }) => {
     await gate
     await route.continue()
   })
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: /3D Map/ }).click()
   const layer = page.getByRole("combobox", { name: "Static marker layer" })
   try {
@@ -73,7 +73,7 @@ test("layer selection waits for the stage catalog", async ({ page }) => {
 
 test("3D canvas fills the main view with accessible floating controls", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: /3D Map/ }).click()
   await expect(page.locator("canvas")).toBeVisible()
   await expect.poll(() => page.locator("canvas").evaluate((canvas) => canvas.getBoundingClientRect().width)).toBeGreaterThan(1000)

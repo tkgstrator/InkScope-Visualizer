@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test"
 
 test("map opens in an orbit view and can return there from the top view", async ({ page }) => {
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: /3D Map/ }).click()
   await expect(page.locator("canvas")).toBeVisible()
 

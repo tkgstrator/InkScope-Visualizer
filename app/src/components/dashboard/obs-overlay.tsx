@@ -4,15 +4,21 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { clientIp, serverIp } from "@/demo-data"
 import type { OverlayFeedState } from "@/lib/live-feed"
+import { emptySessionObservation, type SessionObservation } from "@/lib/session-observation"
+import type { PacketEnvelope } from "../../../../api/wire"
 
-export function Overlay({ serverRtt, clientRtt, wave, quota, source = "demo", liveFeed }: {
+export function Overlay({ serverRtt, clientRtt, wave, quota, source = "demo", liveFeed, recordedObservation, recordedEvent }: {
   serverRtt: string
   clientRtt: string
   wave: number
   quota: number
-  source?: "demo" | "live"
+  source?: "demo" | "live" | "recorded"
   liveFeed?: OverlayFeedState
+  recordedObservation?: SessionObservation
+  recordedEvent?: PacketEnvelope
 }) {
+  const recorded = recordedObservation ?? emptySessionObservation()
+  const recordedRow = recordedEvent?.rows.find((row) => row.status === "authenticated" || row.status === "proof_verified") ?? recordedEvent?.rows[0]
   useEffect(() => {
     document.documentElement.classList.add("obs-overlay")
     return () => document.documentElement.classList.remove("obs-overlay")
@@ -28,6 +34,22 @@ export function Overlay({ serverRtt, clientRtt, wave, quota, source = "demo", li
               <Separator className="bg-white/20" />
               <div className="flex justify-between gap-3"><span className="text-white/60">LATEST</span><span className="truncate text-right">{liveFeed?.latest?.kind ?? "—"}</span></div>
               <div className="flex justify-between gap-3"><span className="text-white/60">STATUS</span><span className="truncate text-right">{liveFeed?.latest?.status ?? "—"}</span></div>
+            </> : source === "recorded" ? <>
+              {recorded.host ? <>
+                <div className="flex justify-between gap-3"><span className="text-white/60">SERVER</span><span className="truncate text-right">{recorded.host}</span></div>
+                {recorded.clients.length === 0 && <div className="flex justify-between gap-3"><span className="text-white/60">CLIENT</span><span>—</span></div>}
+                {recorded.clients.map((client) => <div key={client.ip} className="flex justify-between gap-3"><span className="text-white/60">CLIENT</span><span className="truncate text-right">{client.ip} · {client.delay === null ? "—" : `${client.delay} ms`}</span></div>)}
+              </> : <>
+                <div className="flex justify-between gap-3"><span className="text-white/60">SOURCE</span><span className="truncate text-right">{recorded.source ?? "—"}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-white/60">DEST</span><span className="truncate text-right">{recorded.destination ?? "—"}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-white/60">DELAY</span><span>{recorded.pairDelay === null ? "—" : `${recorded.pairDelay} ms`}</span></div>
+              </>}
+              <Separator className="bg-white/20" />
+              <div className="flex justify-between gap-3"><span className="text-white/60">STAGE</span><span className="truncate text-right">{recorded.stageId || "—"}</span></div>
+              <div className="flex justify-between gap-3"><span className="text-white/60">DIFFICULTY</span><span>{recorded.difficulty ?? "—"}</span></div>
+              <div className="flex justify-between gap-3"><span className="text-white/60">QUOTA</span><span>{recorded.quota ?? "—"}</span></div>
+              <div className="flex justify-between gap-3"><span className="text-white/60">SEQUENCE</span><span>{recorded.sequence ?? "—"}</span></div>
+              <div className="flex justify-between gap-3"><span className="text-white/60">LATEST</span><span className="truncate text-right">{recordedRow?.kind ?? "—"}</span></div>
             </> : <>
               <div className="flex justify-between"><span className="text-white/60">SERVER</span><span>{serverIp} <b>{serverRtt}ms</b></span></div>
               <div className="flex justify-between"><span className="text-white/60">CLIENT</span><span>{clientIp} <b>{clientRtt}ms</b></span></div>

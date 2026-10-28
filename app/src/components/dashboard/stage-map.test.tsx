@@ -6,6 +6,7 @@ describe("StageMap data source", () => {
   it("keeps demo position controls only in demo mode", () => {
     const demo = renderToStaticMarkup(<StageMap tick={0} source="demo" />)
     const replay = renderToStaticMarkup(<StageMap tick={0} source="replay" />)
+    const recorded = renderToStaticMarkup(<StageMap tick={0} source="recorded" />)
 
     expect(demo).toContain("Character POV")
     expect(demo).toContain("· DEMO")
@@ -13,6 +14,9 @@ describe("StageMap data source", () => {
     expect(replay).not.toContain("· DEMO")
     expect(replay).toContain("MANUAL STAGE")
     expect(replay).toContain("OBSERVED Unknown")
+    expect(recorded).not.toContain("Character POV")
+    expect(recorded).not.toContain("· DEMO")
+    expect(recorded).toContain("OBSERVED Unknown")
   })
 
   it("shows a raw unknown observed stage without representing it as a loaded map", () => {

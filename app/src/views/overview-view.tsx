@@ -14,7 +14,7 @@ export type OverviewActivity = {
 }
 
 export type OverviewViewProps = {
-  source: "demo" | "live" | "replay"
+  source: "demo" | "live" | "replay" | "recorded"
   total: number | null
   authenticated: number | null
   clientRtt: number | string | null

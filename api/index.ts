@@ -1,5 +1,5 @@
 import { websocket } from "@hono/bun"
-import { createApp, indexPath } from "./app"
+import { createApp, indexPath, readSampleConfig } from "./app"
 import { LiveStore } from "./live-store"
 import { openPostgresPersistence } from "./postgres"
 
@@ -11,6 +11,14 @@ if (!(await Bun.file(indexPath).exists())) {
 const port = Number(process.env.PORT ?? 10252)
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
   console.error(`Invalid PORT: ${process.env.PORT}`)
+  process.exit(1)
+}
+
+let sample: ReturnType<typeof readSampleConfig>
+try {
+  sample = readSampleConfig(process.env)
+} catch (error) {
+  console.error(error instanceof Error ? error.message : "Invalid recorded sample configuration")
   process.exit(1)
 }
 
@@ -37,6 +45,7 @@ if (replay) {
 const app = createApp({
   store,
   replay,
+  sample,
   ingestToken: process.env.INKSCOPE_VISUALIZER_TOKEN,
   controlToken: process.env.INKSCOPE_CONTROL_TOKEN,
 })

@@ -50,8 +50,9 @@ queue, and slow browser clients are disconnected.
 | `WS /api/live` | Read-only full packet stream. Sends `hello`, bounded `snapshot`, `packet`, and `gap` messages. |
 | `WS /api/overlay` | Read-only OBS stream. Sends `hello`, reduced `snapshot`, `summary`, and `gap`; no raw bytes or decoded fields. |
 | `WS /api/ingest` | Native InkScope publisher. Requires the bearer token. |
-| `GET /api/sessions` | Saved session summaries when PostgreSQL is configured. |
+| `GET /api/sessions` | Saved session summaries when PostgreSQL is configured; `include_session_id=<UUID>` keeps a selected older session in the list. |
 | `GET /api/sessions/:id/events?after_record=...&limit=100` | Ordered saved packets; maximum page size 500. |
+| `GET /api/sample` | The locally configured recorded sample window, at most 1,200 packets, or an explicit unavailable/empty state. |
 
 Browser WebSockets with a foreign `Origin` are rejected before upgrade. A
 browser stream closes if it tries to publish. All endpoints remain available
@@ -121,6 +122,17 @@ the server with an explicit error. Without `DATABASE_URL`, the status reports
 `mode: "memory"`, and replay routes return HTTP 503 rather than demo data.
 The table uses `NUMERIC(20,0)` for full unsigned record/timestamp values and
 JSONB for the validated envelope. `(session_id, record)` is unique.
+
+For a local recorded sample, set both `INKSCOPE_SAMPLE_SESSION_ID` and
+`INKSCOPE_SAMPLE_AFTER_RECORD` in the ignored `.env.local` file. The cursor is
+the record immediately before the first packet to show. `/api/sample` reads
+through the existing PostgreSQL persistence layer and sends
+`Cache-Control: private, no-store`. It returns `state: "unavailable"` without a
+sample configuration, `state: "empty"` when that cursor has no records, and
+`state: "ready"` with the configured session ID, cursor, exact zero-based
+`start_index`, and ordered events.
+The server binds to loopback; real packet bytes, peer addresses, and database
+content stay local and are never added to the repository.
 
 `bash api/test-postgres.sh` creates a disposable Compose project, verifies
 write, deduplication, and replay readback, then removes its own container,

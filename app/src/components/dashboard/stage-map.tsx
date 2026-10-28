@@ -85,7 +85,7 @@ function supportsWebGL(): boolean {
 
 export function StageMap({ tick, source, observedStageId, observedTide, connection = "connected" }: {
   tick: number
-  source: "demo" | "live" | "replay"
+  source: "demo" | "live" | "replay" | "recorded"
   observedStageId?: string | null
   observedTide?: TideLayer | null
   connection?: "idle" | "connecting" | "connected" | "disconnected"

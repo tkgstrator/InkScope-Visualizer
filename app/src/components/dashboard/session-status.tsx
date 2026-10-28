@@ -10,7 +10,7 @@ type SessionStatusProps = {
   clientRtt: string
   wave: number
   quota: number
-  source?: "demo" | "live"
+  source?: "demo" | "live" | "recorded"
   connection?: "idle" | "connecting" | "connected" | "disconnected"
   observation?: SessionObservation
   localGameKey?: string | null
@@ -19,16 +19,17 @@ type SessionStatusProps = {
 }
 
 export function SessionStatus({ serverRtt, clientRtt, wave, quota, source = "demo", connection = "idle", observation, localGameKey = null, controlKeyState = null, controlKeyLocked = false }: SessionStatusProps) {
-  if (source === "live") {
+  if (source !== "demo") {
+    const recorded = source === "recorded"
     const observed = observation ?? emptySessionObservation()
     const peers = observed
     const configured = controlKeyState === "applied" || controlKeyState === "pending"
-    const visibleGameKey = controlKeyLocked && configured ? "********************************" : localGameKey ?? (configured ? "CONFIGURED" : "—")
-    const keyBadge = controlKeyLocked && configured ? "LOCKED" : localGameKey ? "LOCAL" : configured ? "CONFIGURED" : "—"
+    const visibleGameKey = recorded ? "—" : controlKeyLocked && configured ? "********************************" : localGameKey ?? (configured ? "CONFIGURED" : "—")
+    const keyBadge = recorded ? "—" : controlKeyLocked && configured ? "LOCKED" : localGameKey ? "LOCAL" : configured ? "CONFIGURED" : "—"
     return (
       <section className="grid min-h-0 content-start gap-2 overflow-y-auto border-r bg-background p-3 max-xl:grid-cols-2 max-xl:overflow-visible max-xl:border-b max-xl:border-r-0 max-sm:grid-cols-1" aria-label="Session status">
         <Card className="gap-1 rounded-sm p-3 shadow-none ring-0">
-          <div className="mb-1 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">Observed peers · DELAY <Badge variant="outline" className="rounded-sm text-xs">{connection.toUpperCase()}</Badge></div>
+          <div className="mb-1 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">Observed peers · DELAY <Badge variant="outline" className="rounded-sm text-xs">{recorded ? "RECORDED" : connection.toUpperCase()}</Badge></div>
           {peers.host === null ? <>
             <div className="flex items-center gap-2 font-mono text-xs"><Server className="size-3.5 text-[#63acff]" /><span className="w-12 text-muted-foreground">SOURCE</span><span className="min-w-0 flex-1 truncate">{peers.source ?? "—"}</span></div>
             <div className="flex items-center gap-2 font-mono text-xs"><Users className="size-3.5 text-[#6af6cd]" /><span className="w-12 text-muted-foreground">DEST</span><span className="min-w-0 flex-1 truncate">{peers.destination ?? "—"}</span></div>
@@ -41,11 +42,11 @@ export function SessionStatus({ serverRtt, clientRtt, wave, quota, source = "dem
         </Card>
         <Card className="gap-1 rounded-sm p-3 shadow-none ring-0">
           <div className="mb-1 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">Keys <Badge variant="outline" className="rounded-sm text-xs">{keyBadge}</Badge></div>
-          <div className="flex gap-2 font-mono text-xs"><span className="w-12 shrink-0 text-muted-foreground">Game</span><code className={`min-w-0 ${controlKeyLocked ? "truncate" : "break-all"}`}>{visibleGameKey}</code></div>
+          <div className="flex gap-2 font-mono text-xs"><span className="w-12 shrink-0 text-muted-foreground">Game</span><code className={`min-w-0 ${controlKeyLocked && !recorded ? "truncate" : "break-all"}`}>{visibleGameKey}</code></div>
           <div className="flex gap-2 font-mono text-xs"><span className="w-12 text-muted-foreground">Pia</span><code>—</code></div>
         </Card>
         <Card className="gap-1 rounded-sm p-3 shadow-none ring-0">
-          <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">PrivateSetting · observed</div>
+          <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{recorded ? "Setting · observed" : "PrivateSetting · observed"}</div>
           <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">StageId</span><b className="truncate">{observed.stageId || "—"}</b></div>
           <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">Difficulty</span><b>{observed.difficulty ?? "—"}</b></div>
           <div className="flex justify-between gap-2 font-mono text-xs"><span className="text-muted-foreground">JobType</span><b>{observed.jobType ?? "—"}</b></div>

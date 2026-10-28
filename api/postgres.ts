@@ -13,6 +13,15 @@ function parseStoredPayload(payload: unknown): PacketEnvelope {
   return parsePacketEnvelope(typeof payload === "string" ? payload : JSON.stringify(payload))
 }
 
+function storedSession(row: Record<string, unknown>): StoredSession {
+  return {
+    session_id: String(row.session_id),
+    events: String(row.events),
+    first_timestamp_ns: String(row.first_timestamp_ns),
+    last_timestamp_ns: String(row.last_timestamp_ns),
+  }
+}
+
 export class PostgresPersistence implements PacketPersistence {
   constructor(private readonly sql: SQL) {}
 
@@ -47,12 +56,21 @@ export class PostgresPersistence implements PacketPersistence {
       ORDER BY MAX(received_at) DESC
       LIMIT 100
     `
-    return (rows as Array<Record<string, unknown>>).map((row) => ({
-      session_id: String(row.session_id),
-      events: String(row.events),
-      first_timestamp_ns: String(row.first_timestamp_ns),
-      last_timestamp_ns: String(row.last_timestamp_ns),
-    }))
+    return (rows as Array<Record<string, unknown>>).map(storedSession)
+  }
+
+  async sessionSummary(sessionId: string): Promise<StoredSession | null> {
+    const rows = await this.sql`
+      SELECT session_id::text AS session_id,
+             COUNT(*)::text AS events,
+             MIN(timestamp_ns)::text AS first_timestamp_ns,
+             MAX(timestamp_ns)::text AS last_timestamp_ns
+      FROM inkscope_packet_events
+      WHERE session_id = ${sessionId}::uuid
+      GROUP BY session_id
+    `
+    const row = (rows as Array<Record<string, unknown>>)[0]
+    return row ? storedSession(row) : null
   }
 
   async readEvents(sessionId: string, afterRecord: string | null, limit: number): Promise<PacketEnvelope[]> {
@@ -68,6 +86,19 @@ export class PostgresPersistence implements PacketPersistence {
         ORDER BY record ASC LIMIT ${limit}
       `
     return (rows as Array<{ payload: unknown }>).map((row) => parseStoredPayload(row.payload))
+  }
+
+  async countEventsThrough(sessionId: string, afterRecord: string): Promise<number> {
+    const rows = await this.sql`
+      SELECT COUNT(*)::text AS events
+      FROM inkscope_packet_events
+      WHERE session_id = ${sessionId}::uuid AND record <= ${afterRecord}::numeric
+    `
+    const count = String(rows[0]?.events ?? "")
+    if (!/^(0|[1-9][0-9]*)$/.test(count) || BigInt(count) > BigInt(Number.MAX_SAFE_INTEGER)) {
+      throw new Error("Invalid saved event count")
+    }
+    return Number(count)
   }
 
   async recent(limit: number): Promise<PacketEnvelope[]> {

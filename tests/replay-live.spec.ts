@@ -17,7 +17,7 @@ test("saved session events appear in live Replay without demo values", async ({ 
     version: 1, session_id: fixture.session_id, events: [first, second], next_record: second.record,
   } }))
 
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("button", { name: "Switch to live feed" }).click()
   await page.getByRole("tab", { name: "Replay" }).click()
   await expect(page.getByRole("button", { name: `Session ${fixture.session_id}` })).toBeVisible()
@@ -42,7 +42,7 @@ test("exact-multiple replay page stops without a phantom next page", async ({ pa
     version: 1, session_id: fixture.session_id, events, next_record: "100",
   } }))
 
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("button", { name: "Switch to live feed" }).click()
   await page.getByRole("tab", { name: "Replay" }).click()
   await expect(page.getByText("1–100 / 100")).toBeVisible()
@@ -86,7 +86,7 @@ test("replay replaces pages and ignores a pending old-session response", async (
     }
   })
 
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("button", { name: "Switch to live feed" }).click()
   await page.getByRole("tab", { name: "Replay" }).click()
   await expect(page.getByText("1–100 / 101")).toBeVisible()

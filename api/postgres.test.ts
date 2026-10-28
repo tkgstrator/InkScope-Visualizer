@@ -9,6 +9,23 @@ import { samplePacket } from "./test-fixture"
 const url = process.env.INKSCOPE_TEST_DATABASE_URL
 
 describe.skipIf(!url)("PostgreSQL replay readback", () => {
+  it("counts the saved rows through a cursor even when record numbers have gaps", async () => {
+    const db = await openPostgresPersistence(url!)
+    const cleanup = new SQL(url!)
+    const session = crypto.randomUUID()
+    try {
+      for (const record of ["3", "7", "11"]) expect(await db.save(samplePacket(record, session))).toBe(true)
+      expect(await db.countEventsThrough(session, "2")).toBe(0)
+      expect(await db.countEventsThrough(session, "7")).toBe(2)
+      expect(await db.countEventsThrough(session, "10")).toBe(2)
+      expect(await db.countEventsThrough(session, "11")).toBe(3)
+    } finally {
+      await cleanup`DELETE FROM inkscope_packet_events WHERE session_id = ${session}::uuid`
+      await cleanup.close()
+      await db.close()
+    }
+  })
+
   it("stores exact u64 values, deduplicates records, and reads events back", async () => {
     const db = await openPostgresPersistence(url!)
     const cleanup = new SQL(url!)
@@ -19,6 +36,10 @@ describe.skipIf(!url)("PostgreSQL replay readback", () => {
       expect(await db.save(event)).toBe(false)
       expect(await db.lastRecord(session)).toBe(event.record)
       expect(await db.readEvents(session, null, 10)).toEqual([event])
+      expect(await db.sessionSummary(session)).toEqual({
+        session_id: session, events: "1", first_timestamp_ns: event.timestamp_ns, last_timestamp_ns: event.timestamp_ns,
+      })
+      expect(await db.sessionSummary(crypto.randomUUID())).toBeNull()
       expect((await db.listSessions()).some((item) => item.session_id === session && item.events === "1")).toBe(true)
       const app = createApp({ store: new LiveStore({ persistence: db }), replay: db })
       const sessionsResponse = await app.request("http://127.0.0.1:10252/api/sessions")

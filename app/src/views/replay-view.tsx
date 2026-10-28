@@ -13,7 +13,7 @@ export type ReplaySession = {
 }
 
 export type ReplayViewProps = {
-  source: "demo" | "live" | "replay"
+  source: "demo" | "live" | "replay" | "recorded"
   persistence?: "memory" | "postgres" | null
   sessions: ReplaySession[]
   selectedSessionId: string | null
@@ -27,6 +27,7 @@ export type ReplayViewProps = {
   onSelectSession: (sessionId: string) => void
   onLoadMore: () => void
   onLoadPrevious?: () => void
+  onJumpToStart?: () => void
   position: number
   playing: boolean
   onPositionChange: (position: number) => void
@@ -64,7 +65,7 @@ function captureRange(events: readonly PacketEnvelope[]): [string, string] | nul
 export function ReplayView({
   source, persistence = null, sessions, selectedSessionId, selectedEvents, loading, error,
   hasMore, hasPrevious = false, pageNumber = 1, pageStartIndex = 0,
-  onSelectSession, onLoadMore, onLoadPrevious, position, playing, onPositionChange, onPlayingChange,
+  onSelectSession, onLoadMore, onLoadPrevious, onJumpToStart, position, playing, onPositionChange, onPlayingChange,
 }: ReplayViewProps) {
   const replaySeconds = Math.floor(position * 1.2)
   const replayTime = `${String(Math.floor(replaySeconds / 60)).padStart(2, "0")}:${String(replaySeconds % 60).padStart(2, "0")}`
@@ -168,6 +169,7 @@ export function ReplayView({
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3 font-mono text-xs text-muted-foreground">
                   <span>{loading ? "LOADING" : pageEnd ? hasMore ? "PAGE END · NEXT PAGE" : "SESSION END" : `${selectedEvents.length} ON PAGE`}</span>
                   <div className="flex gap-2">
+                    {pageStartIndex > 0 && onJumpToStart && <Button variant="outline" className="rounded-sm" disabled={loading} onClick={() => { onPlayingChange(false); onPositionChange(0); onJumpToStart() }}>Session start</Button>}
                     {hasPrevious && <Button variant="outline" className="rounded-sm" disabled={loading} onClick={() => changePage("previous")}>Previous page</Button>}
                     {hasMore && <Button variant="outline" className="rounded-sm" disabled={loading} onClick={() => changePage("next")}>Next page</Button>}
                   </div>

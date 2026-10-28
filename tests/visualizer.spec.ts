@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test"
 
 test("persistent status, navigation, and typography", async ({ page }) => {
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await expect(page.getByText("Captured packets")).toBeVisible()
   await expect(page.getByText(/Live session/)).toHaveCount(0)
   await expect(page.getByRole("region", { name: "Session status" })).toContainText("Cop_Shakedent")
@@ -61,7 +61,7 @@ test("persistent status, navigation, and typography", async ({ page }) => {
 test("status moves above content on narrower screens", async ({ page }) => {
   for (const width of [1024, 375]) {
     await page.setViewportSize({ width, height: 800 })
-    await page.goto("/")
+    await page.goto("/?source=demo")
     const layout = await page.evaluate(() => {
       const nav = document.querySelector('aside[aria-label="Views"]')!.getBoundingClientRect()
       const status = document.querySelector('section[aria-label="Session status"]')!.getBoundingClientRect()
@@ -89,13 +89,13 @@ test("status moves above content on narrower screens", async ({ page }) => {
 })
 
 test("WAVE selection updates status and OBS overlay", async ({ page }) => {
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("button", { name: /01 Low tide/ }).click()
   await expect(page.getByRole("region", { name: "Session status" })).toContainText("WAVE 01/03")
   await expect(page.getByRole("region", { name: "Session status" })).toContainText("QUOTA 21")
   await page.getByRole("tab", { name: /OBS/ }).click()
   await expect(page.getByRole("heading", { name: "OBS Browser Source" })).toBeVisible()
-  await expect(page.getByText("http://localhost:10252/?view=overlay&wave=1")).toBeVisible()
+  await expect(page.getByText("http://localhost:10252/?view=overlay&source=demo&wave=1")).toBeVisible()
   const overlay = page.frameLocator('iframe[title="OBS overlay preview"]')
   await expect(overlay.getByText("WAVE 01 / 03")).toBeVisible()
   await expect(overlay.getByText("Quota 21")).toBeVisible()
@@ -105,7 +105,7 @@ test("WAVE selection updates status and OBS overlay", async ({ page }) => {
 
 test("3D map camera and RomFS marker layer controls", async ({ page }) => {
   const localTerrain = await page.request.head("/maps/local/cop-shakedent.glb")
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: /3D Map/ }).click()
   await expect(page.getByRole("heading", { name: "Map & position" })).toBeVisible()
   await expect(page.getByText("39/115 ROMFS MARKERS · All")).toBeVisible()
@@ -163,7 +163,7 @@ test("a broken terrain file leaves the coordinate viewer available", async ({ pa
   await page.route("**/maps/local/cop-shakedent.glb", async (route) => {
     await route.fulfill({ status: 200, contentType: "model/gltf-binary", body: route.request().method() === "HEAD" ? "" : "not a GLB" })
   })
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: /3D Map/ }).click()
   await expect(page.getByText("TERRAIN UNAVAILABLE · GRID")).toBeVisible()
   await expect(page.getByRole("img", { name: /3D stage coordinate viewer/ })).toBeVisible()

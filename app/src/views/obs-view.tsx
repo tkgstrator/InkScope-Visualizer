@@ -6,7 +6,7 @@ import { FlatCard } from "@/components/dashboard/flat-card"
 
 export type ObsViewProps = {
   wave: number | null
-  source: "demo" | "live" | "replay"
+  source: "demo" | "live" | "replay" | "recorded"
   overlayUrl: string
 }
 

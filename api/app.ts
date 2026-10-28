@@ -17,6 +17,24 @@ const localTerrainNames = new Set([
   "cop-shakerail.glb", "cop-shakeship.glb", "cop-shakespiral.glb", "cop-shakeup.glb",
   "cop-temple.glb", "cop-upland.glb",
 ])
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+const decimalU64Pattern = /^(0|[1-9][0-9]{0,19})$/
+const maxSampleResponseBytes = 8 * 1024 * 1024
+const sampleBatchSize = 32
+const maxSampleEvents = 1200
+
+export type RecordedSampleConfig = { sessionId: string; afterRecord: string }
+
+export function readSampleConfig(env: Record<string, string | undefined>): RecordedSampleConfig | undefined {
+  const sessionId = env.INKSCOPE_SAMPLE_SESSION_ID
+  const afterRecord = env.INKSCOPE_SAMPLE_AFTER_RECORD
+  if (sessionId === undefined && afterRecord === undefined) return undefined
+  if (!sessionId || !afterRecord || !uuidPattern.test(sessionId) || !decimalU64Pattern.test(afterRecord)
+    || BigInt(afterRecord) > 18_446_744_073_709_551_615n) {
+    throw new Error("Invalid recorded sample configuration")
+  }
+  return { sessionId, afterRecord }
+}
 
 function localHostAllowed(requestUrl: string, hostHeader: string | undefined): boolean {
   try {
@@ -69,7 +87,7 @@ function clientSnapshot<T>(events: T[], maxEvents = 64): T[] {
   return selected
 }
 
-export function createApp(options: { store?: LiveStore; ingestToken?: string | null; controlToken?: string | null; replay?: PostgresPersistence } = {}) {
+export function createApp(options: { store?: LiveStore; ingestToken?: string | null; controlToken?: string | null; replay?: PostgresPersistence; sample?: RecordedSampleConfig } = {}) {
   const store = options.store ?? new LiveStore()
   const ingestToken = options.ingestToken ?? null
   const replay = options.replay
@@ -88,9 +106,56 @@ export function createApp(options: { store?: LiveStore; ingestToken?: string | n
     connected_clients: store.listenerCount,
   }))
 
+  app.get("/api/sample", async (context) => {
+    context.header("Cache-Control", "private, no-store")
+    if (!options.sample) return context.json({ version: 1, state: "unavailable" })
+    if (!replay) return context.json({ error: "Recorded sample storage unavailable" }, 503)
+    const { sessionId, afterRecord } = options.sample
+    try {
+      let batch = await replay.readEvents(sessionId, afterRecord, sampleBatchSize)
+      if (batch.length === 0) return context.json({ version: 1, state: "empty", session_id: sessionId, after_record: afterRecord })
+      const startIndex = await replay.countEventsThrough(sessionId, afterRecord)
+      const base = { version: 1, state: "ready", session_id: sessionId, after_record: afterRecord, start_index: startIndex }
+      const selected: typeof batch = []
+      const encoder = new TextEncoder()
+      let bytes = encoder.encode(JSON.stringify({ ...base, events: selected })).byteLength
+      let readCount = 0
+      let cursor = afterRecord
+      let full = false
+      while (batch.length > 0) {
+        const requested = Math.min(sampleBatchSize, maxSampleEvents - readCount)
+        const bounded = batch.slice(0, requested)
+        readCount += bounded.length
+        for (const event of bounded) {
+          const eventBytes = encoder.encode(JSON.stringify(event)).byteLength
+          if (bytes + eventBytes + (selected.length > 0 ? 1 : 0) > maxSampleResponseBytes) { full = true; break }
+          selected.push(event)
+          bytes += eventBytes + (selected.length > 1 ? 1 : 0)
+        }
+        if (full || readCount >= maxSampleEvents || bounded.length < requested) break
+        cursor = bounded.at(-1)!.record
+        batch = await replay.readEvents(sessionId, cursor, Math.min(sampleBatchSize, maxSampleEvents - readCount))
+      }
+      if (selected.length === 0) return context.json({ error: "Recorded sample event too large" }, 413)
+      return context.json({ ...base, events: selected })
+    } catch {
+      return context.json({ error: "Recorded sample read failed" }, 503)
+    }
+  })
+
   app.get("/api/sessions", async (context) => {
     if (!replay) return context.json({ error: "Replay storage unavailable in memory mode" }, 503)
-    return context.json({ version: 1, sessions: await replay.listSessions() })
+    const included = new URL(context.req.url).searchParams.getAll("include_session_id")
+    if (included.length > 1 || included.length === 1 && !uuidPattern.test(included[0]!)) {
+      return context.json({ error: "Invalid session query" }, 400)
+    }
+    const sessions = await replay.listSessions()
+    const requestedId = included[0]
+    if (requestedId && !sessions.some((session) => session.session_id === requestedId)) {
+      const additional = await replay.sessionSummary(requestedId)
+      if (additional) sessions.push(additional)
+    }
+    return context.json({ version: 1, sessions })
   })
 
   app.get("/api/sessions/:sessionId/events", async (context) => {
@@ -98,8 +163,8 @@ export function createApp(options: { store?: LiveStore; ingestToken?: string | n
     const sessionId = context.req.param("sessionId")
     const afterRecord = context.req.query("after_record") ?? null
     const rawLimit = context.req.query("limit") ?? "100"
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(sessionId)
-      || afterRecord !== null && (!/^(0|[1-9][0-9]{0,19})$/.test(afterRecord) || BigInt(afterRecord) > 18_446_744_073_709_551_615n)
+    if (!uuidPattern.test(sessionId)
+      || afterRecord !== null && (!decimalU64Pattern.test(afterRecord) || BigInt(afterRecord) > 18_446_744_073_709_551_615n)
       || !/^[1-9][0-9]{0,2}$/.test(rawLimit) || Number(rawLimit) > 500) {
       return context.json({ error: "Invalid replay query" }, 400)
     }

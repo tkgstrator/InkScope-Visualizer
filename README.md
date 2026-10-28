@@ -1,6 +1,6 @@
 # InkScope Visualizer
 
-InkScope の UDP 解析結果を表示する Bun・Hono・React・TypeScript アプリです。Overview、Debug、Raw HEX、3D Map、Replay、OBS、Settings を備えます。初期表示は操作確認用のデモです。LIVE は InkScope が実際に送ったイベントだけを表示します。
+InkScope の UDP 解析結果を表示する Bun・Hono・React・TypeScript アプリです。Overview、Debug、Raw HEX、3D Map、Replay、OBS、Settings を備えます。ローカルの記録サンプルが設定されていれば初期表示に使います。LIVE は InkScope が実際に送ったイベントだけを表示します。
 
 ## 起動
 
@@ -17,6 +17,17 @@ bun run start
 
 `bun run dev` はビルド後に Hono を監視起動します。`bun run dev:app` は単独の Vite サーバーで、Hono と同じポートを使うため同時起動しません。
 
+## 記録サンプル
+
+InkScope の `inspect` で PCAP を Visualizer に送ると、PostgreSQL にセッションが保存されます。そのセッションの一部分を初期表示にするには、Git 管理外の `.env.local` に次の二つを追加します。
+
+```dotenv
+INKSCOPE_SAMPLE_SESSION_ID=<保存済みセッションの UUID>
+INKSCOPE_SAMPLE_AFTER_RECORD=<表示開始直前のレコード番号>
+```
+
+RECORDED は指定した位置から最大 1,200 パケットを読みます。Debug と Raw はその範囲を 80 パケットずつ移動できます。Replay は同じセッションの指定位置から始まり、`Session start` で先頭へ戻れます。保存済みデータだけを表示し、LIVE の WebSocket とは別です。設定がなければ合成 DEMO に切り替わります。`?source=demo` と `?source=live` で表示モードを直接指定できます。サンプルの読み込み失敗やレコード欠損は RECORDED のエラー・空状態として表示します。PCAP、鍵、実パケットの JSON はリポジトリに追加しません。
+
 ```sh
 bun run test
 bun run test:e2e
@@ -30,7 +41,7 @@ InkScope はキャプチャーを行い、`ws://127.0.0.1:10252/api/ingest` に�
 
 Settings では起動済み InkScope のローカル制御ポートと GameKey を指定します。制御機能は `capture --control-port 10254` で明示的に有効化した場合だけ使用できます。接続先は `127.0.0.1` に限定します。画面から入力した GameKey はブラウザーの開いている間だけメモリに保持し、ブラウザー保存領域、イベント、OBS、PostgreSQL には書き込みません。起動時に `--game-key-file` などで指定した鍵は `*` で隠して読み取り専用にします。接続先の初期値は `127.0.0.1:10254` です。現在の Compose 構成は PostgreSQL sidecar のみで、InkScope のコンテナ起動は含めていません。
 
-LIVE の RTT、PrivateSetting、WAVE などは、InkScope が実際に復号して送ったフィールドだけを表示します。未受信の値は `—` です。Replay は PostgreSQL に保存されたイベントをセッションごとに読み直します。OBS のブラウザーソース URL は <http://localhost:10252/?view=overlay&source=live> です。
+LIVE と RECORDED の RTT、PrivateSetting、WAVE などは、InkScope が実際に復号して送ったフィールドだけを表示します。未受信の値は `—` です。Replay は PostgreSQL に保存されたイベントをセッションごとに読み直します。OBS のブラウザーソース URL は <http://localhost:10252/?view=overlay&source=live> です。
 
 ## 3D Map
 

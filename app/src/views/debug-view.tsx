@@ -17,7 +17,7 @@ export type DebugViewProps = {
   filter: Filter
   onFilter: (value: Filter) => void
   inputRef: Ref<HTMLInputElement>
-  source: "demo" | "live" | "replay"
+  source: "demo" | "live" | "replay" | "recorded"
 }
 
 export function DebugView({

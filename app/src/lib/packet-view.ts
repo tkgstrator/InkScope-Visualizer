@@ -29,9 +29,13 @@ function packetRow(event: PacketEnvelope, row: WireRow, index: number): Packet {
   }
 }
 
-export function livePacketRows(events: PacketEnvelope[]): Packet[] {
-  return events.slice(-80).flatMap((event) => {
+export function packetRowsForEvents(events: PacketEnvelope[]): Packet[] {
+  return events.flatMap((event) => {
     const rows: WireRow[] = event.rows.length === 0 ? [{ kind: "UDP", status: "unparsed", fields: [] }] : event.rows
     return rows.map((row, index) => packetRow(event, row, index))
-  }).reverse().slice(0, 80)
+  }).reverse()
+}
+
+export function livePacketRows(events: PacketEnvelope[]): Packet[] {
+  return packetRowsForEvents(events.slice(-80)).slice(0, 80)
 }

@@ -21,7 +21,7 @@ test("Settings connects to loopback control and clears the GameKey input", async
     await route.fulfill({ status: 202, json: { version: 1, state: "reachable", target: { host: "127.0.0.1", port: 10254 }, key_state: "pending", key_epoch: 2 } })
   })
 
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: "Settings" }).click()
   await expect(page.getByRole("heading", { name: "InkScope settings" })).toBeVisible()
   await expect(page.getByLabel("InkScope IP")).toHaveValue("127.0.0.1")
@@ -70,7 +70,7 @@ test("an older status response cannot replace a completed connection", async ({ 
     await route.fulfill({ json: connectedStatus })
   })
   await page.route("**/api/control/connect", (route) => route.fulfill({ status: 202, json: connectedStatus }))
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: "Settings" }).click()
   await page.getByLabel("GameKey").fill(key)
   await page.getByRole("button", { name: "Connect", exact: true }).click()
@@ -98,7 +98,7 @@ test("keyless Connect discovers a locked startup key and Check target can switch
     await route.fulfill({ json: statusFor(targetPort) })
   })
 
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: "Settings" }).click()
   await expect(page.getByRole("button", { name: "Connect", exact: true })).toBeEnabled()
   await page.getByRole("button", { name: "Connect", exact: true }).click()
@@ -154,7 +154,7 @@ test("startup key stays masked and locked in Settings and sidebar", async ({ pag
 test("seven navigation icons fit at phone width without a selected border", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
   await page.route("**/api/control/status", (route) => route.fulfill({ json: { version: 1, state: "unconfigured", target: null } }))
-  await page.goto("/")
+  await page.goto("/?source=demo")
   await page.getByRole("tab", { name: "Settings" }).click()
   const layout = await page.evaluate(() => {
     const tabs = [...document.querySelectorAll<HTMLElement>('aside[aria-label="Views"] [role="tab"]')]

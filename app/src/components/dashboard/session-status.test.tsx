@@ -117,3 +117,26 @@ describe("observed peer roles and delay", () => {
     expect(unmatched).not.toContain("99 ms")
   })
 })
+
+describe("recorded sample status", () => {
+  it("shows only recorded observations and does not inherit live or synthetic values", () => {
+    const observation = foldObservationSnapshot(emptySessionObservation(), [
+      event("1", "OnlineCoopSetting", [{ name: "StageResource", value: "Cop_Shakeup" }, { name: "Difficulty", value: "150" }]),
+      event("2", "CoopSequenceNetState", [{ name: "Quota", value: "4" }, { name: "Sequence", value: "1" }]),
+    ])
+    const markup = renderToStaticMarkup(<SessionStatus source="recorded" observation={observation} connection="connected" localGameKey="00112233445566778899aabbccddeeff" serverRtt="99" clientRtt="88" wave={2} quota={24} />)
+
+    expect(markup).toContain("RECORDED")
+    expect(markup).toContain("Cop_Shakeup")
+    expect(markup).toContain("150")
+    expect(markup).toContain("Quota</span><b>4</b>")
+    expect(markup).toContain("Sequence</span><b>1</b>")
+    expect(markup).toContain("WAVE</span><b>—</b>")
+    expect(markup).toContain("Tide</span><b>—</b>")
+    expect(markup).not.toContain("CONNECTED")
+    expect(markup).not.toContain("DEMO HEX")
+    expect(markup).not.toContain("00112233445566778899aabbccddeeff")
+    expect(markup).not.toContain("1665")
+    expect(markup).not.toContain("24</b>")
+  })
+})
