@@ -14,6 +14,7 @@ export default defineConfig({
       async closeBundle() {
         await rm(resolve(import.meta.dirname, "dist/maps/local"), { recursive: true, force: true })
         await rm(resolve(import.meta.dirname, "dist/local-fonts"), { recursive: true, force: true })
+        await rm(resolve(import.meta.dirname, "dist/local-game-assets"), { recursive: true, force: true })
       },
     },
   ],

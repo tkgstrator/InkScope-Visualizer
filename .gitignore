@@ -6,3 +6,4 @@ playwright-report/
 .env.local
 .env.*.local
 app/public/local-fonts/
+app/public/local-game-assets/

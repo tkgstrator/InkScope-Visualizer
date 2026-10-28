@@ -19,6 +19,19 @@ bun run start
 
 Replay HUD は `thunder_api` の Splatoon 2 / Splatoon 1 フォントをローカルで利用できます。隣の `thunder_api/docs/mock-diff/assets/fonts/` にキャッシュがある場合は `bun tools/sync-hud-fonts.ts` を実行します。別の場所ならフォントディレクトリを引数で指定します。フォントは `app/public/local-fonts/` に置かれ、Git と配布ビルドには含まれず、起動中のローカル Hono から配信します。キャッシュがない環境では M PLUS 1 Code に切り替わります。
 
+金イクラのアイコンは `bun tools/sync-hud-egg-icon.ts` で `thunder_api/docs/mock-diff/assets/img/ui/` のローカルキャッシュからコピーできます。別の場所なら同ディレクトリを引数で指定します。コピー先の `app/public/local-game-assets/` は Git と配布ビルドから除外され、ローカル Hono が許可したアイコンだけを配信します。
+
+所有する Splatoon 3 11.3.0 RomFS の HUD 素材は `Layout/Coop_MainTV_00.Nin_NX_NVN.blarc.zs`、`Layout/TGPlayerIcon_00.Nin_NX_NVN.blarc.zs`、`Layout/Timer_00.Nin_NX_NVN.blarc.zs` にあります。Zstd と SARC を展開すると各アーカイブに `__Combined.bntx` が入っています。ローカルの `wimgt` で以下のように PNG に変換し、同じ出力ディレクトリから必要な8枚だけを取り込みます。
+
+```sh
+wimgt DECODE /path/to/Coop_MainTV_00/__Combined.bntx --dest /tmp/inkscope-hud-decoded/Coop_MainTV_00.png
+wimgt DECODE /path/to/TGPlayerIcon_00/__Combined.bntx --dest /tmp/inkscope-hud-decoded/TGPlayerIcon_00.png
+wimgt DECODE /path/to/Timer_00/__Combined.bntx --dest /tmp/inkscope-hud-decoded/Timer_00.png
+bun tools/sync-romfs-hud-assets.ts /tmp/inkscope-hud-decoded
+```
+
+使用する画像は金イクラ `img001`、上段テープの装飾 `img008`、下段テープの装飾 `img006`、共通の左端 `img005`、上段の右端 `img009`、下段の右端 `img007`、イカの主表示 `img014`、タイマー台座 `img000` です。テープの端は画面全幅へ引き伸ばさず、帯の両端に置きます。PNG は `app/public/local-game-assets/` にのみ置かれ、Git と配布ビルドには入りません。
+
 ## 記録サンプル
 
 InkScope の `inspect` で PCAP を Visualizer に送ると、PostgreSQL にセッションが保存されます。そのセッションの一部分を初期表示にするには、Git 管理外の `.env.local` に次の二つを追加します。

@@ -1,7 +1,7 @@
 /// <reference types="bun" />
 import { describe, expect, it } from "bun:test"
 import { readdir } from "node:fs/promises"
-import { app, createApp, distDir, localFontDir, localTerrainPath, readSampleConfig } from "./app"
+import { app, createApp, distDir, localFontDir, localGameAssetDir, localTerrainPath, readSampleConfig } from "./app"
 import type { PostgresPersistence } from "./postgres"
 import type { PacketEnvelope } from "./wire"
 import fixture from "./fixtures/packet-v1.json"
@@ -218,6 +218,48 @@ describe("Hono visualizer server", () => {
     for (const name of ["unknown.woff2", "splat-fonts.css", "splatoon1-common.ttf", "..%2f.env.local"]) {
       expect((await app.request(`http://localhost:10252/local-fonts/${name}`)).status).toBe(404)
     }
+  })
+
+  it("serves the locally cached Golden Egg icon outside the build output", async () => {
+    const name = "gold-ikura.svg"
+    const asset = Bun.file(`${localGameAssetDir}/${name}`)
+    expect(await Bun.file(`${distDir}/local-game-assets/${name}`).exists()).toBe(false)
+    const head = await app.request(`http://localhost:10252/local-game-assets/${name}`, { method: "HEAD" })
+    if (await asset.exists()) {
+      expect(head.status).toBe(200)
+      expect(head.headers.get("content-type")).toContain("image/svg+xml")
+      expect(head.headers.get("cache-control")).toContain("private")
+      expect(Number(head.headers.get("content-length"))).toBe(asset.size)
+      const response = await app.request(`http://localhost:10252/local-game-assets/${name}`)
+      expect(response.status).toBe(200)
+      expect((await response.text()).startsWith("<svg ")).toBe(true)
+    } else {
+      expect(head.status).toBe(404)
+    }
+    for (const blocked of ["unknown.svg", "ikura.svg", "..%2f.env.local"]) {
+      expect((await app.request(`http://localhost:10252/local-game-assets/${blocked}`)).status).toBe(404)
+    }
+  })
+
+  it("serves only allowlisted local RomFS HUD PNGs without bundling them", async () => {
+    for (const name of [
+      "romfs-coop-egg.png", "romfs-coop-tape-main.png", "romfs-coop-tape-lower.png",
+      "romfs-coop-tape-left.png", "romfs-coop-tape-main-right.png", "romfs-coop-tape-lower-right.png",
+      "romfs-coop-squid.png", "romfs-coop-timer.png",
+    ]) {
+      const file = Bun.file(`${localGameAssetDir}/${name}`)
+      expect(await Bun.file(`${distDir}/local-game-assets/${name}`).exists()).toBe(false)
+      const response = await app.request(`http://localhost:10252/local-game-assets/${name}`)
+      if (!(await file.exists())) {
+        expect(response.status).toBe(404)
+        continue
+      }
+      expect(response.status).toBe(200)
+      expect(response.headers.get("content-type")).toContain("image/png")
+      expect(response.headers.get("cache-control")).toContain("private")
+      expect((await response.arrayBuffer()).byteLength).toBe(file.size)
+    }
+    expect((await app.request("http://localhost:10252/local-game-assets/romfs-coop-unknown.png")).status).toBe(404)
   })
 
   it("keeps replay routes explicit when PostgreSQL is not configured", async () => {

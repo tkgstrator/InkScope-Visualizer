@@ -12,7 +12,19 @@ export const indexPath = resolve(distDir, "index.html")
 export const localTerrainDir = resolve(import.meta.dirname, "../app/public/maps/local")
 export const localTerrainPath = resolve(localTerrainDir, "cop-shakedent.glb")
 export const localFontDir = resolve(import.meta.dirname, "../app/public/local-fonts")
+export const localGameAssetDir = resolve(import.meta.dirname, "../app/public/local-game-assets")
 const localFontNames = new Set(["splatoon1-common.woff2", "splatoon2-common.woff2"])
+const localGameAssetNames = new Set([
+  "gold-ikura.svg",
+  "romfs-coop-egg.png",
+  "romfs-coop-tape-main.png",
+  "romfs-coop-tape-lower.png",
+  "romfs-coop-tape-left.png",
+  "romfs-coop-tape-main-right.png",
+  "romfs-coop-tape-lower-right.png",
+  "romfs-coop-squid.png",
+  "romfs-coop-timer.png",
+])
 const localTerrainNames = new Set([
   "cop-carousel.glb", "cop-district00.glb", "cop-factory.glb", "cop-manbou00.glb",
   "cop-section.glb", "cop-shakedent.glb", "cop-shakehighway.glb", "cop-shakelift.glb",
@@ -259,6 +271,21 @@ export function createApp(options: { store?: LiveStore; ingestToken?: string | n
       headers: {
         "Content-Type": "font/woff2",
         "Content-Length": String(font.size),
+        "Cache-Control": "private, max-age=3600, must-revalidate",
+        "X-Content-Type-Options": "nosniff",
+      },
+    })
+  })
+
+  app.on(["GET", "HEAD"], "/local-game-assets/:name", async (context) => {
+    const name = context.req.param("name")
+    if (!localGameAssetNames.has(name)) return context.notFound()
+    const asset = Bun.file(resolve(localGameAssetDir, name))
+    if (!(await asset.exists())) return context.notFound()
+    return new Response(context.req.method === "HEAD" ? null : asset, {
+      headers: {
+        "Content-Type": name.endsWith(".png") ? "image/png" : "image/svg+xml",
+        "Content-Length": String(asset.size),
         "Cache-Control": "private, max-age=3600, must-revalidate",
         "X-Content-Type-Options": "nosniff",
       },
