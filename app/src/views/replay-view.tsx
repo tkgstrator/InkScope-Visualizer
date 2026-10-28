@@ -32,8 +32,10 @@ export type ReplayViewProps = {
   playing: boolean
   onPositionChange: (position: number) => void
   onElapsedChange: (elapsedMs: number) => void
+  onBackwardSeek: () => void
   onPlayingChange: (playing: boolean) => void
   onRestart: () => void
+  resetEpoch: number
   onRetry?: () => void
   hud: ReplayGameSnapshot
   activeSpawns: ReplaySpawn[]
@@ -69,18 +71,19 @@ const timelineRowHeight = 32
 const timelineViewportHeight = 320
 const timelineOverscan = 8
 
-const ReplayTerrain = memo(function ReplayTerrain({ stageId, tide, spawns }: {
+const ReplayTerrain = memo(function ReplayTerrain({ stageId, tide, spawns, resetEpoch }: {
   stageId: string
   tide: ReplayGameSnapshot["tide"]
   spawns: ReplaySpawn[]
+  resetEpoch: number
 }) {
-  return <StageMap tick={0} source="replay" presentation="replay" observedStageId={stageId} observedTide={tide} replaySpawns={spawns} />
+  return <StageMap tick={0} source="replay" presentation="replay" observedStageId={stageId} observedTide={tide} replaySpawns={spawns} resetEpoch={resetEpoch} />
 })
 
 export function ReplayView({
   source, persistence = null, sessions, selectedSessionId, selectedEvents, loading, error,
   pageStartIndex = 0, onSelectSession, position, elapsedMs, durationMs, playing,
-  onPositionChange, onElapsedChange, onPlayingChange, onRestart, onRetry, hud, activeSpawns, keyStatus = "—",
+  onPositionChange, onElapsedChange, onBackwardSeek, onPlayingChange, onRestart, onRetry, resetEpoch, hud, activeSpawns, keyStatus = "—",
 }: ReplayViewProps) {
   const replaySeconds = Math.floor(position * 1.2)
   const replayTime = `${String(Math.floor(replaySeconds / 60)).padStart(2, "0")}:${String(replaySeconds % 60).padStart(2, "0")}`
@@ -90,6 +93,7 @@ export function ReplayView({
   const firstLoaded = selectedEvents[0]
   const lastLoaded = selectedEvents.at(-1)
   const timelineRef = useRef<HTMLDivElement>(null)
+  const sliderStartMs = useRef<number | null>(null)
   const [timelineScrollTop, setTimelineScrollTop] = useState(0)
   const visibleStart = Math.max(0, Math.floor(timelineScrollTop / timelineRowHeight) - timelineOverscan)
   const visibleEnd = Math.min(selectedEvents.length,
@@ -104,6 +108,10 @@ export function ReplayView({
   const captureClock = firstLoaded
     ? captureTime((BigInt(firstLoaded.timestamp_ns) + BigInt(Math.round(Math.max(0, elapsedMs) * 1_000_000))).toString())
     : "—"
+
+  useEffect(() => {
+    sliderStartMs.current = null
+  }, [selectedSessionId])
 
   useEffect(() => {
     const element = timelineRef.current
@@ -122,7 +130,7 @@ export function ReplayView({
     return (
       <div className="relative h-full min-h-[520px] w-full overflow-hidden bg-[#111316]" aria-label="Replay stage">
         <div className="absolute inset-0">
-          {mapStage ? <ReplayTerrain stageId={mapStage} tide={hud.tide} spawns={activeSpawns} /> :
+          {mapStage ? <ReplayTerrain stageId={mapStage} tide={hud.tide} spawns={activeSpawns} resetEpoch={resetEpoch} /> :
             <div className="grid h-full place-items-center font-mono text-xs text-muted-foreground">MAP —</div>}
         </div>
 
@@ -239,7 +247,18 @@ export function ReplayView({
               <div className="min-w-[160px] flex-1">
                 <Slider aria-label="Replay time" className="w-full" value={[elapsedMs >= durationMs ? Math.ceil(durationMs) : Math.max(0, Math.round(elapsedMs))]}
                   max={Math.max(1, Math.ceil(durationMs))} step={1} disabled={loading || error !== null || selectedEvents.length < 2 || durationMs <= 0}
-                  onValueChange={(values) => onElapsedChange(Math.min(durationMs, values[0] ?? 0))} />
+                  onPointerDownCapture={() => { sliderStartMs.current = elapsedMs }}
+                  onPointerCancelCapture={() => { sliderStartMs.current = null }}
+                  onKeyDownCapture={() => { if (sliderStartMs.current === null) sliderStartMs.current = elapsedMs }}
+                  onValueChange={(values) => {
+                    if (sliderStartMs.current === null) sliderStartMs.current = elapsedMs
+                    onElapsedChange(Math.min(durationMs, values[0] ?? 0))
+                  }}
+                  onValueCommit={(values) => {
+                    const start = sliderStartMs.current
+                    sliderStartMs.current = null
+                    if (start !== null && (values[0] ?? 0) < start) onBackwardSeek()
+                  }} />
                 <div className="mt-1 text-right tabular-nums text-muted-foreground">{formatElapsed(elapsedMs)} / {formatElapsed(durationMs)}</div>
               </div>
             </div>

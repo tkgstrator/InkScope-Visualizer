@@ -56,6 +56,7 @@ export function Dashboard() {
   const [wave, setWave] = useState(2)
   const [replayPosition, setReplayPosition] = useState(() => requestedSource === "demo" ? 45 : 0)
   const [replayElapsedMs, setReplayElapsedMs] = useState(0)
+  const [replayResetEpoch, setReplayResetEpoch] = useState(0)
   const [replayPlaying, setReplayPlaying] = useState(false)
   const [verticalNav, setVerticalNav] = useState(() => window.matchMedia("(min-width: 1280px)").matches)
   const nextRecord = useRef(488)
@@ -107,6 +108,7 @@ export function Dashboard() {
     setReplayPosition(next === "demo" ? 45 : 0)
     setReplayElapsedMs(0)
     setReplayPlaying(false)
+    setReplayResetEpoch((current) => current + 1)
   }
   const reportControlState = useCallback((keyState: "absent" | "pending" | "applied" | null, keyLocked: boolean) => {
     setControlKeyState(keyState)
@@ -201,18 +203,23 @@ export function Dashboard() {
   const seekReplayPosition = (position: number) => {
     const index = Math.max(0, Math.min(position, replayOffsets.length - 1))
     const elapsed = replayOffsets[index] ?? 0
+    if (elapsed < replayElapsedMs) setReplayResetEpoch((current) => current + 1)
     setReplayPosition(index)
     setReplayElapsedMs(elapsed)
     replayAnchor.current = { wall: performance.now(), media: elapsed }
   }
 
   const changeReplayPlaying = (playing: boolean) => {
-    if (playing && source !== "demo" && replayElapsedMs >= replayDurationMs) seekReplayTime(0)
+    if (playing && source !== "demo" && replayElapsedMs >= replayDurationMs) {
+      setReplayResetEpoch((current) => current + 1)
+      seekReplayTime(0)
+    }
     setReplayPlaying(playing)
   }
 
   const selectReplaySession = (sessionId: string) => {
     replayArchive.selectSession(sessionId)
+    setReplayResetEpoch((current) => current + 1)
     setReplayPosition(0)
     setReplayElapsedMs(0)
     setReplayPlaying(false)
@@ -338,7 +345,7 @@ export function Dashboard() {
               </TabsContent>
 
               <TabsContent value="replay" className={source === "demo" ? "" : "m-0 h-full"}>
-                <ReplayView source={source} persistence={source === "recorded" ? recordedSample.status === "ready" ? "postgres" : null : liveFeed.persistence} sessions={replayArchive.sessions} selectedSessionId={replayArchive.selectedSessionId} selectedEvents={replayArchive.selectedEvents} loading={replayArchive.loading} error={replayArchive.error} pageStartIndex={replayArchive.startIndex} onSelectSession={selectReplaySession} onRetry={replayArchive.retry} position={replayPosition} elapsedMs={replayElapsedMs} durationMs={replayDurationMs} playing={replayPlaying} onPositionChange={source === "demo" ? setReplayPosition : seekReplayPosition} onElapsedChange={seekReplayTime} onPlayingChange={changeReplayPlaying} onRestart={() => { setReplayElapsedMs(0); setReplayPosition(0); setReplayPlaying(false) }} hud={replayHud} activeSpawns={replaySpawns} keyStatus={replayKeyStatus} />
+                <ReplayView source={source} persistence={source === "recorded" ? recordedSample.status === "ready" ? "postgres" : null : liveFeed.persistence} sessions={replayArchive.sessions} selectedSessionId={replayArchive.selectedSessionId} selectedEvents={replayArchive.selectedEvents} loading={replayArchive.loading} error={replayArchive.error} pageStartIndex={replayArchive.startIndex} onSelectSession={selectReplaySession} onRetry={replayArchive.retry} position={replayPosition} elapsedMs={replayElapsedMs} durationMs={replayDurationMs} playing={replayPlaying} onPositionChange={source === "demo" ? setReplayPosition : seekReplayPosition} onElapsedChange={seekReplayTime} onBackwardSeek={() => setReplayResetEpoch((current) => current + 1)} onPlayingChange={changeReplayPlaying} onRestart={() => { setReplayResetEpoch((current) => current + 1); setReplayElapsedMs(0); setReplayPosition(0); setReplayPlaying(false) }} resetEpoch={replayResetEpoch} hud={replayHud} activeSpawns={replaySpawns} keyStatus={replayKeyStatus} />
               </TabsContent>
 
               <TabsContent value="obs">

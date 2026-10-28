@@ -84,7 +84,7 @@ function supportsWebGL(): boolean {
   }
 }
 
-export function StageMap({ tick, source, observedStageId, observedTide, connection = "connected", presentation = "full", replaySpawns = [] }: {
+export function StageMap({ tick, source, observedStageId, observedTide, connection = "connected", presentation = "full", replaySpawns = [], resetEpoch = 0 }: {
   tick: number
   source: "demo" | "live" | "replay" | "recorded"
   observedStageId?: string | null
@@ -92,6 +92,7 @@ export function StageMap({ tick, source, observedStageId, observedTide, connecti
   connection?: "idle" | "connecting" | "connected" | "disconnected"
   presentation?: "full" | "replay"
   replaySpawns?: ReplaySpawn[]
+  resetEpoch?: number
 }) {
   const [catalog, setCatalog] = useState<CatalogStage[]>([])
   const [catalogError, setCatalogError] = useState(false)
@@ -116,6 +117,7 @@ export function StageMap({ tick, source, observedStageId, observedTide, connecti
   const [terrainState, setTerrainState] = useState<TerrainState>("checking")
   const [webgl] = useState(supportsWebGL)
   const sequence = useRef(0)
+  const previousResetEpoch = useRef(resetEpoch)
   const currentStageId = useRef(selectedStageId)
   currentStageId.current = selectedStageId
   const character = characterMode ? players.find((point) => point.name === selectedPlayer) ?? null : null
@@ -251,6 +253,15 @@ export function StageMap({ tick, source, observedStageId, observedTide, connecti
     if (source === "demo") return
     setMarkerLayer(selectedStage && selectedStage.stageId === observedStageId ? observedTide ?? "All" : "All")
   }, [source, selectedStage, observedStageId, observedTide])
+
+  useEffect(() => {
+    if (presentation !== "replay" || previousResetEpoch.current === resetEpoch) return
+    previousResetEpoch.current = resetEpoch
+    setCharacterMode(false)
+    setSelectedMarker(null)
+    setActiveView("home")
+    setAction({ kind: "home", sequence: ++sequence.current })
+  }, [presentation, resetEpoch])
 
   function viewFrom(axis: AxisView) {
     setCharacterMode(false)

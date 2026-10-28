@@ -24,8 +24,10 @@ test("saved replay shows a continuous captured-time timeline without page contro
       playing={false}
       onPositionChange={() => {}}
       onElapsedChange={() => {}}
+      onBackwardSeek={() => {}}
       onPlayingChange={() => {}}
       onRestart={() => {}}
+      resetEpoch={0}
       hud={{ ...replayGameSnapshotAt({ snapshots: [], spawns: [] }, -1), stageId: "Cop_Shakedent", sessionStageId: "Cop_Shakedent", difficulty: "150", quota: "4", enemySpawnCount: 1 }}
       activeSpawns={[]}
       keyStatus="—"
